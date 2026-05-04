@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-Content \"c:\\\\Users\\\\Matheus Stefano\\\\Desktop\\\\Projeto Motor Hunter Douglas\\\\Testet\\\\index.html\")",
+      "Bash(Measure-Object -Line)",
+      "Bash(Select-Object -ExpandProperty Lines)",
+      "PowerShell(\\(Get-Content \"c:\\\\Users\\\\Matheus Stefano\\\\Desktop\\\\Projeto Motor Hunter Douglas\\\\Testet\\\\index.html\"\\).Count)"
+    ]
+  }
+}

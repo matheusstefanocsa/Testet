@@ -4,6 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Hunter Douglas Motor Calculator</title>
+  <!-- ADDED: SheetJS for Excel (.xlsx/.xls) import support -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     :root {
       --bg: #f3f5f7;
@@ -19,9 +21,7 @@
       --shadow: 0 18px 40px rgba(24, 32, 42, 0.10);
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -43,15 +43,12 @@
       padding: 28px;
     }
 
-    main {
-      padding: 28px;
-    }
+    main { padding: 28px; }
 
     h1 {
       margin: 0 0 8px;
       font-size: 26px;
       line-height: 1.15;
-      letter-spacing: 0;
     }
 
     .subtitle {
@@ -61,10 +58,7 @@
       line-height: 1.45;
     }
 
-    .form-grid {
-      display: grid;
-      gap: 16px;
-    }
+    .form-grid { display: grid; gap: 16px; }
 
     label {
       display: grid;
@@ -74,8 +68,7 @@
       color: #26312d;
     }
 
-    input,
-    select {
+    input, select {
       width: 100%;
       min-height: 42px;
       border: 1px solid var(--line);
@@ -87,8 +80,7 @@
       outline: none;
     }
 
-    input:focus,
-    select:focus {
+    input:focus, select:focus {
       border-color: var(--accent);
       box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.16);
     }
@@ -111,10 +103,24 @@
       accent-color: var(--accent);
     }
 
-    .hint {
-      color: var(--muted);
+    .hint { color: var(--muted); font-size: 12px; font-weight: 400; }
+
+    /* ── Section divider inside sidebar ── */
+    .sidebar-section {
+      margin-top: 20px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+    .sidebar-section-title {
       font-size: 12px;
-      font-weight: 400;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: var(--muted);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .notice {
@@ -136,11 +142,7 @@
       margin-bottom: 20px;
     }
 
-    .actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
     button {
       min-height: 40px;
@@ -159,9 +161,10 @@
       color: white;
     }
 
+    /* ── KPI summary row — 6 cards (MODIFIED: was 5, added Weighted Gross Margin) ── */
     .summary {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(6, minmax(0, 1fr));
       gap: 14px;
       margin-bottom: 18px;
     }
@@ -199,9 +202,7 @@
 
     .shade-rail {
       position: absolute;
-      top: -8px;
-      left: 7%;
-      right: 7%;
+      top: -8px; left: 7%; right: 7%;
       height: 15px;
       border-radius: 999px;
       background: #2f3742;
@@ -210,24 +211,20 @@
 
     .shade {
       position: absolute;
-      top: 7px;
-      left: 18%;
-      width: 64%;
-      height: 78%;
+      top: 7px; left: 18%;
+      width: 64%; height: 78%;
       border-radius: 0 0 6px 6px;
       background:
         repeating-linear-gradient(180deg, rgba(255,255,255,0.18) 0 3px, transparent 3px 12px),
         linear-gradient(90deg, rgba(255,255,255,0.22), transparent 45%, rgba(0,0,0,0.08)),
         var(--shade);
-      box-shadow: inset 0 -10px 14px rgba(0, 0, 0, 0.10);
+      box-shadow: inset 0 -10px 14px rgba(0,0,0,0.10);
       transition: width 180ms ease, height 180ms ease, left 180ms ease;
     }
 
     .shade-bottom {
       position: absolute;
-      left: 0;
-      right: 0;
-      bottom: -7px;
+      left: 0; right: 0; bottom: -7px;
       height: 10px;
       border-radius: 999px;
       background: #46515c;
@@ -235,18 +232,15 @@
 
     .motor-badge {
       position: absolute;
-      right: -15px;
-      top: 20px;
-      width: 34px;
-      height: 34px;
+      right: -15px; top: 20px;
+      width: 34px; height: 34px;
       border-radius: 50%;
       background: #fff;
       border: 1px solid var(--line);
       display: grid;
       place-items: center;
       color: var(--accent);
-      font-size: 18px;
-      font-weight: 900;
+      font-size: 18px; font-weight: 900;
       box-shadow: 0 8px 18px rgba(24, 32, 42, 0.14);
     }
 
@@ -256,9 +250,7 @@
       align-content: center;
     }
 
-    .visual-copy h2 {
-      font-size: 22px;
-    }
+    .visual-copy h2 { font-size: 22px; }
 
     .spec-list {
       display: grid;
@@ -276,20 +268,14 @@
     .spec span {
       display: block;
       color: var(--muted);
-      font-size: 11px;
-      font-weight: 700;
+      font-size: 11px; font-weight: 700;
       text-transform: uppercase;
       margin-bottom: 6px;
     }
 
-    .spec strong {
-      display: block;
-      font-size: 16px;
-      line-height: 1.2;
-    }
+    .spec strong { display: block; font-size: 16px; line-height: 1.2; }
 
-    .metric,
-    .panel {
+    .metric, .panel {
       background: var(--panel);
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -304,11 +290,47 @@
       gap: 10px;
     }
 
-    .metric span {
-      color: var(--muted);
+    /* Accent top border on KPI cards */
+    .metric { border-top: 3px solid var(--accent); }
+    .metric.m-warn  { border-top-color: var(--warn); }
+    .metric.m-pos   { border-top-color: #15803d; }
+    .metric.m-incr  { border-top-color: #6d28d9; }
+    .metric.m-wtd   { border-top-color: #0369a1; } /* ADDED: Weighted Gross Margin — blue */
+
+    /* ADDED ── Data Import sidebar section ── */
+    .import-status {
+      margin-top: 8px;
+      padding: 8px 10px;
+      border-radius: 6px;
       font-size: 12px;
       font-weight: 700;
+      background: #f1f5f9;
+      color: var(--muted);
+      border: 1px dashed var(--line);
+    }
+    .import-status.ok { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+    .import-status.err { background: #fff1f2; color: #9f1239; border-color: #fecdd3; }
+
+    /* ADDED ── Incremental Margin Matrix ── */
+    .im-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .im-table th {
+      padding: 8px 10px;
+      border-bottom: 2px solid var(--line);
+      color: var(--muted); font-size: 11px;
+      text-transform: uppercase; white-space: nowrap; text-align: center;
+    }
+    .im-table th:first-child { text-align: left; }
+    .im-table td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: center; white-space: nowrap; }
+    .im-table td:first-child { text-align: left; font-weight: 700; }
+    .im-table .im-diag { background: #f8fafc; color: var(--muted); font-weight: 400; }
+    .im-table tr:last-child td { border-bottom: 0; }
+    .im-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: var(--muted); }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 12px; font-weight: 700;
       text-transform: uppercase;
+      display: flex; align-items: center; gap: 5px;
     }
 
     .metric strong {
@@ -316,10 +338,41 @@
       line-height: 1.05;
     }
 
-    .metric small {
+    .metric small { color: var(--muted); font-size: 12px; }
+
+    /* ── Tooltip ── */
+    .tip {
+      position: relative;
+      display: inline-flex;
+      align-items: center; justify-content: center;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--line);
       color: var(--muted);
-      font-size: 12px;
+      font-size: 9px; font-weight: 900;
+      cursor: help;
+      flex-shrink: 0;
     }
+    .tip::before {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1f2937;
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 5px;
+      font-size: 12px; font-weight: 400;
+      line-height: 1.55;
+      white-space: pre-line;
+      min-width: 210px; max-width: 290px;
+      opacity: 0; pointer-events: none;
+      transition: opacity .15s;
+      z-index: 200;
+      text-transform: none; letter-spacing: 0;
+    }
+    .tip:hover::before { opacity: 1; }
 
     .panel {
       padding: 18px;
@@ -335,11 +388,7 @@
       margin-bottom: 14px;
     }
 
-    h2 {
-      margin: 0;
-      font-size: 18px;
-      letter-spacing: 0;
-    }
+    h2 { margin: 0; font-size: 18px; }
 
     .pill {
       display: inline-flex;
@@ -349,8 +398,7 @@
       background: var(--soft);
       color: var(--accent-2);
       padding: 5px 10px;
-      font-size: 12px;
-      font-weight: 700;
+      font-size: 12px; font-weight: 700;
       white-space: nowrap;
     }
 
@@ -361,10 +409,7 @@
       align-items: center;
     }
 
-    .bars {
-      display: grid;
-      gap: 10px;
-    }
+    .bars { display: grid; gap: 10px; }
 
     .bar-row {
       display: grid;
@@ -394,24 +439,19 @@
       font-size: 13px;
     }
 
-    th,
-    td {
+    th, td {
       padding: 12px 10px;
       border-bottom: 1px solid var(--line);
       text-align: right;
       white-space: nowrap;
     }
 
-    th:first-child,
-    td:first-child {
-      text-align: left;
-    }
+    th:first-child, td:first-child { text-align: left; }
 
     th {
       color: var(--muted);
       font-size: 11px;
       text-transform: uppercase;
-      letter-spacing: 0;
     }
 
     tr:last-child td {
@@ -430,60 +470,92 @@
       padding: 14px;
       font-size: 14px;
     }
+    .error.show { display: block; }
 
-    .error.show {
-      display: block;
+    /* ══════════════════════════════════════════════
+       GRID COMPARISON TABLE
+    ══════════════════════════════════════════════ */
+    .gc-table th:not(:first-child) { text-align: right; }
+    .gc-table td:not(:first-child) { text-align: right; }
+
+    /* Delta colours */
+    .delta-pos { color: #15803d; font-weight: 700; }
+    .delta-neg { color: #b91c1c; font-weight: 700; }
+
+    /* Selected (current) grid row */
+    .row-selected td { background: #f0fdf4 !important; font-weight: 700; }
+    .sel-badge {
+      display: inline-flex;
+      padding: 1px 7px;
+      border-radius: 999px;
+      font-size: 10px; font-weight: 700;
+      background: var(--soft);
+      color: var(--accent);
+      vertical-align: middle;
+      margin-left: 5px;
     }
 
+    /* Mini MSRP bar inside grid comparison */
+    .gc-bar-wrap { display: flex; align-items: center; gap: 7px; justify-content: flex-end; }
+    .gc-bar-track { width: 70px; height: 7px; border-radius: 999px; background: #edf0eb; overflow: hidden; }
+    .gc-bar-fill  { height: 100%; border-radius: 999px; background: var(--accent); }
+
+    /* ══════════════════════════════════════════════
+       WEIGHTED SIZE ANALYSIS
+    ══════════════════════════════════════════════ */
+    .wt-section { margin-bottom: 0; }
+
+    .preset-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .preset-btn {
+      min-height: 30px;
+      padding: 4px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      font-size: 12px; font-weight: 700;
+      cursor: pointer;
+      color: var(--ink);
+    }
+    .preset-btn:hover { background: var(--soft); border-color: var(--accent); color: var(--accent); }
+
+    .wt-vol-input {
+      width: 76px;
+      text-align: right;
+      padding: 4px 7px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .wt-vol-input:focus { border-color: var(--accent); outline: none; }
+
+    .wt-result-row td { background: #fafbf8 !important; font-weight: 700; border-top: 2px solid var(--line) !important; }
+    .wt-gm-highlight { color: var(--accent); font-size: 16px; }
+
+    /* ══════════════════════════════════════════════
+       RESPONSIVE
+    ══════════════════════════════════════════════ */
     @media (max-width: 980px) {
-      .app {
-        grid-template-columns: 1fr;
-      }
-
-      aside {
-        border-right: 0;
-        border-bottom: 1px solid var(--line);
-      }
-
-      .summary,
-      .breakdown,
-      .visual-panel {
-        grid-template-columns: 1fr 1fr;
-      }
+      .app { grid-template-columns: 1fr; }
+      aside { border-right: 0; border-bottom: 1px solid var(--line); }
+      /* MODIFIED: summary and breakdown responsive (6 cols → 2 cols on mobile) */
+      .summary, .breakdown, .visual-panel { grid-template-columns: 1fr 1fr; }
     }
 
     @media (max-width: 640px) {
-      aside,
-      main {
-        padding: 18px;
-      }
-
-      .row,
-      .summary,
-      .breakdown,
-      .visual-panel,
-      .spec-list {
-        grid-template-columns: 1fr;
-      }
-
-      .topbar,
-      .panel-head {
-        display: grid;
-      }
-
-      .bar-row {
-        grid-template-columns: 88px 1fr 74px;
-      }
-
-      table {
-        display: block;
-        overflow-x: auto;
-      }
+      aside, main { padding: 18px; }
+      .row, .summary, .breakdown, .visual-panel, .spec-list { grid-template-columns: 1fr; }
+      .topbar, .panel-head { display: grid; }
+      .bar-row { grid-template-columns: 88px 1fr 74px; }
+      table { display: block; overflow-x: auto; }
     }
   </style>
 </head>
 <body>
   <div class="app">
+
+    <!-- ═══════════════════════════════════════════════
+         SIDEBAR — Inputs
+    ════════════════════════════════════════════════ -->
     <aside>
       <h1>Motorized Shade Calculator</h1>
       <p class="subtitle">Enter the same parameters used by print_motor_breakdown() to calculate MSRP, selling price, estimated cost, and margin.</p>
@@ -495,7 +567,6 @@
             <input id="height" type="number" min="1" step="0.01" placeholder="Enter height">
             <span class="hint">In inches</span>
           </label>
-
           <label>
             width
             <input id="width" type="number" min="1" step="0.01" placeholder="Enter width">
@@ -538,9 +609,65 @@
         </label>
       </form>
 
+      <!-- ── Portfolio / Incremental section ── -->
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">
+          Portfolio &amp; Incremental Analysis
+          <span class="tip" data-tip="Volume is used to compute Incremental Margin $ in the Grid Comparison table.
+The Weighted Size Analysis uses per-width volumes you enter there.">?</span>
+        </div>
+        <div class="form-grid">
+          <label>
+            Volume (units)
+            <input id="volume" type="number" min="0" step="1" placeholder="e.g. 100">
+            <span class="hint">Units sold — scales incremental margin $</span>
+          </label>
+          <label>
+            Baseline for comparison
+            <select id="compareGrid">
+              <option value="">Same as selected grid</option>
+            </select>
+            <span class="hint">Override comparison baseline in grid table</span>
+          </label>
+        </div>
+      </div>
+
       <div class="notice" id="boundsNotice"></div>
+
+      <!-- ADDED ── Data Import section ──
+           Connects to real JSON/Excel datasets.
+           JSON schema: { grid, controlSystem, topTreatment, height, width,
+                          costFactor, volume, compareGrid, widthVolumes: {width: units} }
+           Excel schema: columns Width and Volume (row 1 = headers).
+      -->
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">
+          Import Real Data
+          <span class="tip" data-tip="Connect to a real dataset (Excel or JSON).
+Fields present in the file overwrite the manual inputs.
+Width volumes auto-populate the Weighted Size Analysis.
+
+JSON: { grid, controlSystem, topTreatment, height, width,
+        costFactor, volume, widthVolumes: {'24':80,'36':120,...} }
+
+Excel/CSV: columns Width and Volume (row 1 = headers).">?</span>
+        </div>
+        <div id="importStatus" class="import-status">No file loaded</div>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <label style="cursor:pointer;display:contents">
+            <input type="file" id="importFile" accept=".json,.xlsx,.xls,.csv" style="display:none">
+            <button type="button" id="importFileBtn" onclick="document.getElementById('importFile').click()">📂 Load file</button>
+          </label>
+          <button type="button" id="importSampleBtn">📋 Sample JSON</button>
+          <button type="button" id="importClearBtn">✕ Clear</button>
+        </div>
+        <div class="hint" style="margin-top:8px">JSON · Excel (.xlsx/.xls) · CSV</div>
+      </div>
     </aside>
 
+    <!-- ═══════════════════════════════════════════════
+         MAIN — Results
+    ════════════════════════════════════════════════ -->
     <main>
       <div class="topbar">
         <div>
@@ -555,6 +682,7 @@
 
       <div class="error" id="errorBox"></div>
 
+      <!-- Visual preview -->
       <section class="panel visual-panel">
         <div class="shade-stage" aria-label="Motorized shade preview">
           <div class="window">
@@ -571,45 +699,113 @@
             <p class="subtitle" id="visualSubtitle">Select the shade configuration to generate an estimate.</p>
           </div>
           <div class="spec-list">
-            <div class="spec">
-              <span>Dimensions</span>
-              <strong id="specDimensions">Not set</strong>
-            </div>
-            <div class="spec">
-              <span>Fabric Grid</span>
-              <strong id="specGrid">Not set</strong>
-            </div>
-            <div class="spec">
-              <span>Treatment</span>
-              <strong id="specTreatment">Not set</strong>
-            </div>
+            <div class="spec"><span>Dimensions</span><strong id="specDimensions">Not set</strong></div>
+            <div class="spec"><span>Fabric Grid</span><strong id="specGrid">Not set</strong></div>
+            <div class="spec"><span>Treatment</span><strong id="specTreatment">Not set</strong></div>
           </div>
         </div>
       </section>
 
+      <!-- ── 5 KPI cards ── -->
       <section class="summary" aria-label="Summary">
+
         <div class="metric">
-          <span>Total MSRP</span>
+          <span>
+            Total MSRP
+            <span class="tip" data-tip="List price before any discount.
+= Shade MSRP + Control MSRP + Treatment MSRP">?</span>
+          </span>
           <strong id="totalMsrp">$0.00</strong>
           <small id="configText">Waiting for configuration</small>
         </div>
-        <div class="metric">
-          <span>Customer Price</span>
+
+        <div class="metric m-warn">
+          <span>
+            Customer Price
+            <span class="tip" data-tip="Customer selling price.
+= MSRP × cost_factor
+The cost_factor slider controls this multiplier.">?</span>
+          </span>
           <strong id="totalPrice">$0.00</strong>
           <small id="factorText">Cost factor 40.0%</small>
         </div>
+
         <div class="metric">
-          <span>Estimated Cost</span>
+          <span>
+            Estimated Cost
+            <span class="tip" data-tip="Estimated unit cost.
+= Shade cost + Control cost + Treatment cost
+Shade cost = MSRP × grid-specific cost/MSRP ratio.">?</span>
+          </span>
           <strong id="totalCost">$0.00</strong>
           <small>Base + control + treatment</small>
         </div>
-        <div class="metric">
-          <span>Gross Margin</span>
+
+        <!--
+          GROSS MARGIN — this is the SINGLE-SIZE margin for the entered dimensions.
+          The WEIGHTED margin (across all standard sizes) appears in the
+          Weighted Size Analysis panel below.
+        -->
+        <div class="metric m-pos">
+          <span>
+            Gross Margin
+            <span class="tip" data-tip="Single-size gross margin at the entered height × width.
+= (Customer Price − Cost) / Customer Price
+
+For a weighted average across the full size range,
+see the 'Weighted Size Analysis' panel below.">?</span>
+          </span>
           <strong id="totalMargin">0.0%</strong>
           <small id="costToMsrpText">Cost/MSRP 0.0%</small>
         </div>
+
+        <!--
+          INCREMENTAL MARGIN $
+          = (GM%_compareGrid − GM%_currentGrid) × volume × selling_price_per_unit
+          Shows in purple. Zero when no volume is entered or grids are the same.
+        -->
+        <div class="metric m-incr">
+          <span>
+            Incremental Margin $
+            <span class="tip" data-tip="Incremental gross margin $ gained by moving from the
+comparison baseline grid to the current grid.
+
+= (GM%_current − GM%_baseline) × Volume × Price/unit
+
+Enter a Volume and a baseline grid (sidebar) to activate.
+See the Grid Comparison table for all pairs at once.">?</span>
+          </span>
+          <strong id="incrMarginKpi">—</strong>
+          <small id="incrMarginNote">Enter volume to activate</small>
+        </div>
+
+        <!-- ADDED: 6th KPI card — Weighted Gross Margin
+             Volume-weighted average GM% across all standard sizes
+             for the selected grid. Eliminates manual size selection. -->
+        <div class="metric m-wtd">
+          <span>
+            Weighted Gross Margin
+            <span class="tip" data-tip="Volume-weighted average gross margin across
+all standard widths for the selected grid.
+
+Formula:
+  Wtd GM% = Σ[(Price − Cost) × Volume]
+            ────────────────────────────
+            Σ[Price × Volume]
+
+No need to pick a single size: all standard widths
+are included, weighted by their volume contribution.
+Sizes with more units carry proportionally more weight.
+
+Auto-fills with a typical size mix on grid selection.
+Customize volumes in the Weighted Size Analysis below.">?</span>
+          </span>
+          <strong id="wtdMarginKpi">—</strong>
+          <small id="wtdMarginNote">Select a grid</small>
+        </div>
       </section>
 
+      <!-- MSRP Composition breakdown -->
       <section class="panel">
         <div class="panel-head">
           <h2>MSRP Composition</h2>
@@ -633,37 +829,183 @@
         </div>
       </section>
 
+      <!-- Current configuration -->
       <section class="panel">
         <div class="panel-head">
           <h2>Current Configuration</h2>
           <span class="pill" id="systemPill">PowerView Gen 3</span>
         </div>
-        <table>
-          <tbody id="configBody"></tbody>
-        </table>
+        <table><tbody id="configBody"></tbody></table>
       </section>
 
+      <!-- R Call -->
       <section class="panel">
         <div class="panel-head">
           <h2>Equivalent R Call</h2>
           <span class="pill">print_motor_breakdown()</span>
         </div>
-        <pre id="rCall" style="margin:0; overflow:auto; background:#f4f6f1; border:1px solid var(--line); border-radius:6px; padding:14px; font-size:13px; line-height:1.45;"></pre>
+        <pre id="rCall" style="margin:0;overflow:auto;background:#f4f6f1;border:1px solid var(--line);border-radius:6px;padding:14px;font-size:13px;line-height:1.45;"></pre>
       </section>
+
+      <!-- ═════════════════════════════════════════════════════════════
+           GRID COMPARISON TABLE
+           Requirement 2: Incremental margin between all grid pairs.
+           Shows all 7 DRSA-DRSG grids at the current height/width
+           with Δ GM% and Δ Margin $ vs the selected baseline.
+      ═════════════════════════════════════════════════════════════════ -->
+      <section class="panel" id="gcPanel" style="display:none">
+        <div class="panel-head">
+          <h2>
+            Grid Comparison — All Grids at This Size
+            <span class="tip" data-tip="Compares every fabric grid (DRSA–DRSG) at the exact
+height × width you entered.
+
+Δ GM% = GM%_grid − GM%_baseline
+Δ Margin $ = (Price/unit − Cost/unit)_grid
+           − (Price/unit − Cost/unit)_baseline
+           × Volume
+
+The baseline is the selected grid (or override in sidebar).
+Positive deltas are green; negative are red.">?</span>
+          </h2>
+          <span class="pill" id="gcBaselinePill">Baseline: —</span>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="gc-table">
+            <thead>
+              <tr>
+                <th style="text-align:left">Grid</th>
+                <th>MSRP</th>
+                <th>Customer Price</th>
+                <th>Cost</th>
+                <th>GM%</th>
+                <th>
+                  Δ GM%
+                  <span class="tip" data-tip="GM%_this_grid − GM%_baseline
+Positive = better margin than baseline.">?</span>
+                </th>
+                <th>
+                  Δ Margin $
+                  <span class="tip" data-tip="(Margin/unit_this − Margin/unit_baseline) × Volume
+Requires the Volume field to be filled in.">?</span>
+                </th>
+                <th style="min-width:110px">MSRP Bar</th>
+              </tr>
+            </thead>
+            <tbody id="gcBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ADDED ════════════════════════════════════════════════════════
+           INCREMENTAL MARGIN MATRIX
+           Requirement 2 (extended): Full NxN matrix of incremental margin
+           between every combination of grids at the current height × width.
+           Each cell = (margin/unit_col − margin/unit_row) × volume
+           Green = gain when moving from row grid TO column grid.
+      ═════════════════════════════════════════════════════════════════ -->
+      <section class="panel" id="imPanel" style="display:none">
+        <div class="panel-head">
+          <h2>
+            Incremental Margin Matrix ($)
+            <span class="tip" data-tip="Shows the $ gain from moving a customer
+from any grid (row) to any other grid (column).
+
+Formula per cell:
+  (Margin/unit_column − Margin/unit_row) × Volume
+
+Green = gain when moving to the column grid.
+Red   = loss when moving to the column grid.
+
+Enter Volume in the sidebar to activate $ values.
+Without volume: shows Δ GM% between pairs.">?</span>
+          </h2>
+          <span class="pill" id="imVolPill">Volume: —</span>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="im-table" id="imTableEl">
+            <thead id="imHead"></thead>
+            <tbody id="imBody"></tbody>
+          </table>
+        </div>
+        <div class="im-legend">
+          <span><span style="color:#15803d;font-weight:700">▲ Green</span> = gain when moving to the column grid</span>
+          <span><span style="color:#b91c1c;font-weight:700">▼ Red</span> = loss when moving to the column grid</span>
+          <span style="color:var(--muted)">Diagonal = same grid (reference GM%)</span>
+        </div>
+      </section>
+
+      <!-- ═════════════════════════════════════════════════════════════
+           WEIGHTED SIZE ANALYSIS
+           Requirement 1: Weighted average margin across all standard widths.
+           Users input volume per width; the dashboard auto-computes
+           Weighted GM% = Σ[(Price−Cost)×Vol] / Σ[Price×Vol].
+           No manual size selection needed.
+      ═════════════════════════════════════════════════════════════════ -->
+      <section class="panel wt-section" id="wtPanel" style="display:none">
+        <div class="panel-head">
+          <h2>
+            Weighted Size Analysis — <span id="wtGridLabel">—</span>
+            <span class="tip" data-tip="Weighted Average Gross Margin across all standard widths for the selected grid.
+
+Formula (revenue-weighted):
+  Wtd GM% = Σ[(Price − Cost) × Volume]
+            ─────────────────────────
+            Σ[Price × Volume]
+
+This replaces manual size selection: sizes are weighted
+by their revenue contribution (Price × Volume), so larger
+or more popular sizes have proportionally more influence.
+
+Enter units sold per width, or use a preset below.">?</span>
+          </h2>
+          <span class="pill" id="wtResultPill">Weighted GM: —</span>
+        </div>
+
+        <!-- Preset volume distribution buttons -->
+        <div class="preset-btns">
+          <span style="font-size:12px;color:var(--muted);font-weight:700;align-self:center">Volume presets:</span>
+          <button type="button" class="preset-btn" id="presetUniform">Uniform (100 ea.)</button>
+          <button type="button" class="preset-btn" id="presetTypical">Typical mix</button>
+          <button type="button" class="preset-btn" id="presetClear">Clear</button>
+        </div>
+
+        <!-- Weighted table — rebuilt by JS whenever grid or inputs change -->
+        <div id="weightedTable" style="overflow-x:auto"></div>
+      </section>
+
     </main>
   </div>
 
+  <!-- ═══════════════════════════════════════════════════════════════════
+       JAVASCRIPT
+       ─────────────────────────────────────────────────────────────────
+       Sections:
+         A. Constants & lookup tables (unchanged)
+         B. Core calculation functions (unchanged)
+         C. Formatting helpers (unchanged)
+         D. NEW — Weighted margin calculation
+         E. NEW — Grid comparison render
+         F. NEW — Weighted size analysis render
+         G. Existing render() + setEmptyState() (extended)
+         H. Event wiring (extended)
+  ════════════════════════════════════════════════════════════════════ -->
   <script>
+
+    /* ──────────────────────────────────────────────────────────────────
+       A. CONSTANTS & LOOKUP TABLES
+    ────────────────────────────────────────────────────────────────── */
+
     const shadeCostToMsrp = {
       DRSA: 0.217, DRSB: 0.187, DRSC: 0.197,
       DRSD: 0.184, DRSE: 0.162, DRSF: 0.144, DRSG: 0.144
     };
 
     const motorizedAddonCostToMsrp = 0.198;
-    const heights = [36, 48, 60, 72, 84, 96, 108, 120, 132];
-    const widthsDrs1 = [24, 30, 36, 48, 60, 72, 84, 96, 107];
-    const widthsDrs2 = [24, 30, 36, 48, 60, 72, 84, 96, 108, 119];
-    const widthsDrs6 = [24, 30, 36, 48, 60, 72, 84, 96, 108, 117];
+    const heights     = [36, 48, 60, 72, 84, 96, 108, 120, 132];
+    const widthsDrs1  = [24, 30, 36, 48, 60, 72, 84, 96, 107];
+    const widthsDrs2  = [24, 30, 36, 48, 60, 72, 84, 96, 108, 119];
+    const widthsDrs6  = [24, 30, 36, 48, 60, 72, 84, 96, 108, 117];
 
     const prices = {
       DRSA: [
@@ -756,22 +1098,13 @@
     };
 
     const controlSystems = [
-      "Custom Clutch",
-      "UltraGlide",
-      "LiteRise",
-      "Cordless Lift",
-      "SoftTouch Motorization",
-      "SoftTouch w/ Rechargeable Wand",
-      "SoftTouch Rechargeable Wand",
-      "PowerView",
-      "PowerView Gen 3",
+      "Custom Clutch","UltraGlide","LiteRise","Cordless Lift",
+      "SoftTouch Motorization","SoftTouch w/ Rechargeable Wand",
+      "SoftTouch Rechargeable Wand","PowerView","PowerView Gen 3",
       "PowerView Gen 3 - Rechargeable Battery Wand",
       "PowerView Gen 3 - Internal Rechargeable Battery",
-      "PowerView+ (low-voltage wired)",
-      "PowerView+ Gen 3",
-      "PowerView AC",
-      "PowerView Gen 3 AC",
-      "PowerView Gen 3 AC Coupled",
+      "PowerView+ (low-voltage wired)","PowerView+ Gen 3",
+      "PowerView AC","PowerView Gen 3 AC","PowerView Gen 3 AC Coupled",
       "Somfy Motorized (RF & H motor)"
     ];
 
@@ -797,38 +1130,36 @@
       DRSG: [88,99,106,127,142,156,173,202,219,236]
     };
 
-    const fasciaDrs1 = [140,149,157,174,190,213,232,250,269];
+    const fasciaDrs1  = [140,149,157,174,190,213,232,250,269];
     const fasciaOther = [140,149,157,174,190,213,232,250,269,286];
-    const pocketDrs1 = [277,320,362,454,539,631,720,811,899];
+    const pocketDrs1  = [277,320,362,454,539,631,720,811,899];
     const pocketOther = [277,320,362,454,539,631,720,811,899,991];
+
     const costPerInch = {
-      "No": 0,
-      "Cassette": 1.09,
-      "Fascia": 0.71,
-      "Dust Cover Valance": 0.71,
-      "Pocket": 0.71
+      "No": 0, "Cassette": 1.09,
+      "Fascia": 0.71, "Dust Cover Valance": 0.71, "Pocket": 0.71
     };
 
     const fixedControls = {
-      "Custom Clutch": { msrp: 0, cost: 0 },
-      "UltraGlide": { msrp: 130, cost: 20.68 },
-      "LiteRise": { msrp: 130, cost: 23.93 },
-      "Cordless Lift": { msrp: 130, cost: 5.01 },
-      "SoftTouch Motorization": { msrp: 200, cost: 39.60 },
-      "SoftTouch w/ Rechargeable Wand": { msrp: 270, cost: 53.46 },
-      "SoftTouch Rechargeable Wand": { msrp: 270, cost: 53.46 },
-      "Somfy Motorized (RF & H motor)": { msrp: 1165, cost: 1165 * motorizedAddonCostToMsrp }
+      "Custom Clutch":                       { msrp:    0, cost:    0 },
+      "UltraGlide":                          { msrp:  130, cost:  20.68 },
+      "LiteRise":                            { msrp:  130, cost:  23.93 },
+      "Cordless Lift":                       { msrp:  130, cost:   5.01 },
+      "SoftTouch Motorization":              { msrp:  200, cost:  39.60 },
+      "SoftTouch w/ Rechargeable Wand":      { msrp:  270, cost:  53.46 },
+      "SoftTouch Rechargeable Wand":         { msrp:  270, cost:  53.46 },
+      "Somfy Motorized (RF & H motor)":      { msrp: 1165, cost: 1165 * motorizedAddonCostToMsrp }
     };
 
     const pvControls = {
-      "PowerView": { h: [60,84,180], w: [48,84,156], msrp: [440,515,595], cost: [87.12,101.97,117.81] },
-      "PowerView Gen 3": { h: [60,84,180], w: [48,84,156], msrp: [440,515,595], cost: [87.12,101.97,117.81] },
-      "PowerView Gen 3 - Rechargeable Battery Wand": { h: [60,84,180], w: [48,84,156], msrp: [510,600,690], cost: [100.98,118.80,136.62] },
-      "PowerView Gen 3 - Internal Rechargeable Battery": { h: [60,84,180], w: [48,84,156], msrp: [510,600,690], cost: [100.98,118.80,136.62] },
-      "PowerView+ (low-voltage wired)": { h: [60,84,180], w: [48,84,156], msrp: [520,610,700], cost: [102.96,120.78,138.60] },
-      "PowerView+ Gen 3": { h: [60,84,180], w: [48,84,156], msrp: [520,610,700], cost: [102.96,120.78,138.60] },
-      "PowerView AC": { h: [48,60,180], w: [30,240,240], msrp: [880,1035,1190], cost: [174.24,204.93,235.62] },
-      "PowerView Gen 3 AC": { h: [48,60,180], w: [30,240,240], msrp: [880,1035,1190], cost: [174.24,204.93,235.62] }
+      "PowerView":                                       { h:[60,84,180], w:[48,84,156], msrp:[440,515,595],   cost:[87.12,101.97,117.81] },
+      "PowerView Gen 3":                                 { h:[60,84,180], w:[48,84,156], msrp:[440,515,595],   cost:[87.12,101.97,117.81] },
+      "PowerView Gen 3 - Rechargeable Battery Wand":     { h:[60,84,180], w:[48,84,156], msrp:[510,600,690],   cost:[100.98,118.80,136.62] },
+      "PowerView Gen 3 - Internal Rechargeable Battery": { h:[60,84,180], w:[48,84,156], msrp:[510,600,690],   cost:[100.98,118.80,136.62] },
+      "PowerView+ (low-voltage wired)":                  { h:[60,84,180], w:[48,84,156], msrp:[520,610,700],   cost:[102.96,120.78,138.60] },
+      "PowerView+ Gen 3":                                { h:[60,84,180], w:[48,84,156], msrp:[520,610,700],   cost:[102.96,120.78,138.60] },
+      "PowerView AC":                                    { h:[48,60,180], w:[30,240,240], msrp:[880,1035,1190], cost:[174.24,204.93,235.62] },
+      "PowerView Gen 3 AC":                              { h:[48,60,180], w:[30,240,240], msrp:[880,1035,1190], cost:[174.24,204.93,235.62] }
     };
 
     const acCoupled = {
@@ -838,74 +1169,49 @@
       5: { msrp: 910, cost: 180.18 }
     };
 
-    const labels = {
-      shade_base: "Shade base",
-      TOTAL: "Total"
-    };
+    const labels = { shade_base: "Shade base", TOTAL: "Total" };
 
-    const fields = {
-      height: document.getElementById("height"),
-      width: document.getElementById("width"),
-      grid: document.getElementById("grid"),
-      controlSystem: document.getElementById("controlSystem"),
-      topTreatment: document.getElementById("topTreatment"),
-      costFactor: document.getElementById("costFactor"),
-      costFactorRange: document.getElementById("costFactorRange"),
-      panels: document.getElementById("panels"),
-      panelsLabel: document.getElementById("panelsLabel")
-    };
+    /* ──────────────────────────────────────────────────────────────────
+       B. CORE CALCULATION FUNCTIONS (unchanged)
+    ────────────────────────────────────────────────────────────────── */
 
     function fillOptions(select, options, selected, placeholder) {
-      const placeholderOption = placeholder
-        ? `<option value="">${placeholder}</option>`
-        : "";
-      select.innerHTML = placeholderOption + options.map((option) => {
-        const isSelected = option === selected ? " selected" : "";
-        return `<option value="${option}"${isSelected}>${option}</option>`;
+      const ph = placeholder ? `<option value="">${placeholder}</option>` : "";
+      select.innerHTML = ph + options.map(o => {
+        const sel = o === selected ? " selected" : "";
+        return `<option value="${o}"${sel}>${o}</option>`;
       }).join("");
     }
 
-    function clamp(value, min, max) {
-      return Math.min(Math.max(value, min), max);
-    }
+    function clamp(value, min, max) { return Math.min(Math.max(value, min), max); }
 
     function bracketIndex(value, grid) {
       if (value <= grid[0]) return 0;
-      for (let i = 0; i < grid.length - 1; i += 1) {
+      for (let i = 0; i < grid.length - 1; i++) {
         if (value >= grid[i] && value <= grid[i + 1]) return i;
       }
       return grid.length - 2;
     }
 
     function bilinearInterp(xGrid, yGrid, zMat, x0, y0) {
-      const x = clamp(x0, xGrid[0], xGrid[xGrid.length - 1]);
-      const y = clamp(y0, yGrid[0], yGrid[yGrid.length - 1]);
-      const i1 = bracketIndex(x, xGrid);
-      const i2 = i1 + 1;
-      const j1 = bracketIndex(y, yGrid);
-      const j2 = j1 + 1;
-      const t = (x - xGrid[i1]) / (xGrid[i2] - xGrid[i1]);
-      const u = (y - yGrid[j1]) / (yGrid[j2] - yGrid[j1]);
-
-      return zMat[i1][j1] * (1 - t) * (1 - u)
-        + zMat[i2][j1] * t * (1 - u)
-        + zMat[i1][j2] * (1 - t) * u
-        + zMat[i2][j2] * t * u;
+      const x  = clamp(x0, xGrid[0], xGrid[xGrid.length - 1]);
+      const y  = clamp(y0, yGrid[0], yGrid[yGrid.length - 1]);
+      const i1 = bracketIndex(x, xGrid), i2 = i1 + 1;
+      const j1 = bracketIndex(y, yGrid), j2 = j1 + 1;
+      const t  = (x - xGrid[i1]) / (xGrid[i2] - xGrid[i1]);
+      const u  = (y - yGrid[j1]) / (yGrid[j2] - yGrid[j1]);
+      return zMat[i1][j1]*(1-t)*(1-u) + zMat[i2][j1]*t*(1-u)
+           + zMat[i1][j2]*(1-t)*u     + zMat[i2][j2]*t*u;
     }
 
-    function safeRatio(num, den) {
-      return den > 0 ? num / den : null;
-    }
+    function safeRatio(num, den) { return den > 0 ? num / den : null; }
 
     function componentResult(component, msrp, costFactor, unitCost) {
       const unitPrice = msrp * costFactor;
       return {
-        component,
-        msrp,
-        unitPrice,
-        unitCost,
+        component, msrp, unitPrice, unitCost,
         grossMargin: safeRatio(unitPrice - unitCost, unitPrice),
-        costToMsrp: safeRatio(unitCost, msrp)
+        costToMsrp:  safeRatio(unitCost, msrp)
       };
     }
 
@@ -919,7 +1225,7 @@
     }
 
     function pvZone(height, width, hBreaks, wBreaks) {
-      for (let i = 0; i < hBreaks.length; i += 1) {
+      for (let i = 0; i < hBreaks.length; i++) {
         if (height <= hBreaks[i] && width <= wBreaks[i]) return i;
       }
       return hBreaks.length - 1;
@@ -927,127 +1233,639 @@
 
     function controlSystemMotor(height, width, controlSystemName, costFactor, panels) {
       let entry = fixedControls[controlSystemName];
-
-      if (!entry && controlSystemName === "PowerView Gen 3 AC Coupled") {
-        entry = acCoupled[panels];
-      }
-
+      if (!entry && controlSystemName === "PowerView Gen 3 AC Coupled") entry = acCoupled[panels];
       if (!entry && pvControls[controlSystemName]) {
         const tbl = pvControls[controlSystemName];
         const zone = pvZone(height, width, tbl.h, tbl.w);
         entry = { msrp: tbl.msrp[zone], cost: tbl.cost[zone] };
       }
-
-      if (!entry) {
-        throw new Error(`Unknown control system: ${controlSystemName}`);
-      }
-
+      if (!entry) throw new Error(`Unknown control system: ${controlSystemName}`);
       return componentResult(controlSystemName, entry.msrp, costFactor, entry.cost);
     }
 
     function lookupByWidth(width, widths, values) {
-      const idx = widths.findIndex((item) => width <= item);
+      const idx = widths.findIndex(item => width <= item);
       return values[idx === -1 ? values.length - 1 : idx];
     }
 
     function topTreatmentMotor(height, width, topTreatmentName, grid, costFactor) {
-      const gridWidth = gridWidths[grid];
+      const gw     = gridWidths[grid];
       const isDrs1 = grid === "DRSA";
-      const listPrice = {
-        "No": Array(gridWidth.length).fill(0),
-        "Cassette": cassettePrices[grid],
-        "Dust Cover Valance": dustCoverPrices[grid],
-        "Fascia": isDrs1 ? fasciaDrs1 : fasciaOther,
-        "Pocket": isDrs1 ? pocketDrs1 : pocketOther
+      const lp = {
+        "No":                Array(gw.length).fill(0),
+        "Cassette":          cassettePrices[grid],
+        "Dust Cover Valance":dustCoverPrices[grid],
+        "Fascia":            isDrs1 ? fasciaDrs1 : fasciaOther,
+        "Pocket":            isDrs1 ? pocketDrs1 : pocketOther
       };
-      const msrp = lookupByWidth(width, gridWidth, listPrice[topTreatmentName]);
+      const msrp     = lookupByWidth(width, gw, lp[topTreatmentName]);
       const unitCost = costPerInch[topTreatmentName] * width;
       return componentResult(topTreatmentName, msrp, costFactor, unitCost);
     }
 
     function totalMotor(height, width, grid, controlSystemName, topTreatmentName, costFactor, panels) {
-      const shade = shadesMotor(height, width, grid, costFactor);
+      const shade   = shadesMotor(height, width, grid, costFactor);
       const control = controlSystemMotor(height, width, controlSystemName, costFactor, panels);
-      const treatment = topTreatmentMotor(height, width, topTreatmentName, grid, costFactor);
-      const msrp = shade.msrp + control.msrp + treatment.msrp;
-      const unitCost = shade.unitCost + control.unitCost + treatment.unitCost;
+      const treat   = topTreatmentMotor(height, width, topTreatmentName, grid, costFactor);
+      const msrp    = shade.msrp + control.msrp + treat.msrp;
+      const unitCost= shade.unitCost + control.unitCost + treat.unitCost;
       return componentResult("TOTAL", msrp, costFactor, unitCost);
     }
 
     function motorBreakdown(height, width, grid, controlSystemName, topTreatmentName, costFactor, panels) {
-      const shade = shadesMotor(height, width, grid, costFactor);
+      const shade   = shadesMotor(height, width, grid, costFactor);
       const control = controlSystemMotor(height, width, controlSystemName, costFactor, panels);
-      const treatment = topTreatmentMotor(height, width, topTreatmentName, grid, costFactor);
-      const total = totalMotor(height, width, grid, controlSystemName, topTreatmentName, costFactor, panels);
-      return [shade, control, treatment, total];
+      const treat   = topTreatmentMotor(height, width, topTreatmentName, grid, costFactor);
+      const total   = totalMotor(height, width, grid, controlSystemName, topTreatmentName, costFactor, panels);
+      return [shade, control, treat, total];
     }
+
+    /* ──────────────────────────────────────────────────────────────────
+       C. FORMATTING HELPERS
+    ────────────────────────────────────────────────────────────────── */
 
     function money(value) {
       return new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-        minimumFractionDigits: 2
+        style: "currency", currency: "USD", minimumFractionDigits: 2
       }).format(Number.isFinite(value) ? value : 0);
     }
 
     function pct(value) {
       return value === null || !Number.isFinite(value)
-        ? "-"
-        : `${(value * 100).toFixed(1)}%`;
+        ? "—" : `${(value * 100).toFixed(1)}%`;
     }
 
     function readNumber(input, fallback) {
-      const value = Number(input.value);
-      return Number.isFinite(value) ? value : fallback;
+      const v = Number(input.value);
+      return Number.isFinite(v) ? v : fallback;
     }
+
+    const sign = v => (v > 0 ? "+" : "");
+
+    /* ──────────────────────────────────────────────────────────────────
+       D. WEIGHTED AVERAGE MARGIN  (Requirement 1)
+
+       Replaces manual size selection.  For a given grid + control + treatment
+       combination, iterates over ALL standard widths and computes:
+
+         Weighted GM% = Σ[(Price_i − Cost_i) × Volume_i]
+                        ─────────────────────────────────
+                        Σ[Price_i × Volume_i]
+
+       Revenue-weighted so that larger/higher-priced sizes carry more
+       influence — consistent with how margin appears on a P&L.
+
+       widthVolumes: { width_number → unit_count }
+       Updated whenever a user changes a volume input in the Weighted table.
+    ────────────────────────────────────────────────────────────────── */
+    const widthVolumes = {};   // persists across re-renders
+
+    function calcWeightedMargin(height, grid, controlSystemName, topTreatmentName, costFactor, panels) {
+      const widths = gridWidths[grid];
+      let totalMarginDollar = 0;
+      let totalRevenue      = 0;
+      let totalUnits        = 0;
+
+      widths.forEach(w => {
+        const vol = widthVolumes[w] || 0;
+        if (vol <= 0) return;
+        const tot = totalMotor(height, w, grid, controlSystemName, topTreatmentName, costFactor, panels);
+        const rev  = tot.unitPrice * vol;
+        const marg = (tot.unitPrice - tot.unitCost) * vol;
+        totalRevenue      += rev;
+        totalMarginDollar += marg;
+        totalUnits        += vol;
+      });
+
+      const wtGM = totalRevenue > 0 ? totalMarginDollar / totalRevenue : null;
+      return { wtGM, totalRevenue, totalMarginDollar, totalUnits };
+    }
+
+    /* ──────────────────────────────────────────────────────────────────
+       E. GRID COMPARISON RENDER  (Requirement 2)
+
+       For every DRSA–DRSG grid, computes totals at the entered height × width
+       then shows:
+         Δ GM%      = GM%_grid  − GM%_baseline
+         Δ Margin $ = (Margin/unit_grid − Margin/unit_baseline) × volume
+
+       incremental_margin = (margin_grid_B − margin_grid_A) × volume
+       (as specified in the requirements — using unit margin difference × volume)
+    ────────────────────────────────────────────────────────────────── */
+    function renderGridComparison(height, width, controlSystemName, topTreatmentName, costFactor, panels, baseGrid, volume) {
+      document.getElementById("gcPanel").style.display = "block";
+      document.getElementById("gcBaselinePill").textContent = `Baseline: ${baseGrid}`;
+
+      const allGrids = Object.keys(shadeCostToMsrp);
+      const baseTot  = totalMotor(height, width, baseGrid, controlSystemName, topTreatmentName, costFactor, panels);
+      const baseMarginPerUnit = baseTot.unitPrice - baseTot.unitCost;
+      const maxMsrp  = Math.max(...allGrids.map(g => totalMotor(height, width, g, controlSystemName, topTreatmentName, costFactor, panels).msrp), 1);
+
+      document.getElementById("gcBody").innerHTML = allGrids.map(grid => {
+        const tot           = totalMotor(height, width, grid, controlSystemName, topTreatmentName, costFactor, panels);
+        const marginPerUnit = tot.unitPrice - tot.unitCost;
+        const deltaGM       = (tot.grossMargin ?? 0) - (baseTot.grossMargin ?? 0);
+        // Incremental margin $ = Δ margin per unit × volume
+        const incrDollar    = (marginPerUnit - baseMarginPerUnit) * (volume || 0);
+        const isBase        = grid === baseGrid;
+        const dCls          = isBase ? "" : (deltaGM > 0.002 ? "delta-pos" : deltaGM < -0.002 ? "delta-neg" : "");
+        const barW          = Math.round((tot.msrp / maxMsrp) * 100);
+
+        return `<tr class="${isBase ? "row-selected" : ""}">
+          <td><strong>${grid}</strong>${isBase ? ' <span class="sel-badge">current baseline</span>' : ""}</td>
+          <td>${money(tot.msrp)}</td>
+          <td>${money(tot.unitPrice)}</td>
+          <td>${money(tot.unitCost)}</td>
+          <td>${pct(tot.grossMargin)}</td>
+          <td class="${dCls}">${isBase ? "—" : sign(deltaGM) + pct(deltaGM)}</td>
+          <td class="${dCls}">
+            ${isBase ? "—"
+              : volume > 0
+                ? sign(incrDollar) + money(incrDollar)
+                : '<span style="color:var(--muted);font-weight:400">enter volume</span>'}
+          </td>
+          <td>
+            <div class="gc-bar-wrap">
+              <div class="gc-bar-track"><div class="gc-bar-fill" style="width:${barW}%"></div></div>
+            </div>
+          </td>
+        </tr>`;
+      }).join("");
+    }
+
+    /* ──────────────────────────────────────────────────────────────────
+       F. WEIGHTED SIZE ANALYSIS RENDER  (Requirement 1)
+
+       Builds the table of all standard widths for the current grid.
+       Each row has an editable Volume input.
+       The footer shows the revenue-weighted GM% and totals.
+
+       Volume inputs survive re-renders via the widthVolumes object.
+    ────────────────────────────────────────────────────────────────── */
+    function renderWeightedAnalysis(height, grid, controlSystemName, topTreatmentName, costFactor, panels) {
+      document.getElementById("wtPanel").style.display = "block";
+      document.getElementById("wtGridLabel").textContent = grid;
+
+      const widths = gridWidths[grid];
+
+      // Compute per-row data
+      let totalMarginDollar = 0;
+      let totalRevenue      = 0;
+      let totalUnits        = 0;
+
+      const rowsData = widths.map(w => {
+        const tot  = totalMotor(height, w, grid, controlSystemName, topTreatmentName, costFactor, panels);
+        const vol  = widthVolumes[w] || 0;
+        const rev  = tot.unitPrice * vol;
+        const marg = (tot.unitPrice - tot.unitCost) * vol;
+        totalRevenue      += rev;
+        totalMarginDollar += marg;
+        totalUnits        += vol;
+        return { w, tot, vol, rev, marg };
+      });
+
+      const wtGM = totalRevenue > 0 ? totalMarginDollar / totalRevenue : null;
+
+      // Update pill
+      document.getElementById("wtResultPill").textContent =
+        wtGM !== null ? `Weighted GM: ${pct(wtGM)}` : "Weighted GM: enter volumes";
+
+      // Build table HTML — volume inputs are preserved via widthVolumes
+      const thStyle = "padding:8px 10px;border-bottom:2px solid var(--line);color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;white-space:nowrap;";
+      const tdStyle = (align) => `padding:9px 10px;border-bottom:1px solid var(--line);text-align:${align};vertical-align:middle;`;
+
+      document.getElementById("weightedTable").innerHTML = `
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead>
+            <tr>
+              <th style="${thStyle}text-align:left">Width</th>
+              <th style="${thStyle}text-align:right">MSRP/unit</th>
+              <th style="${thStyle}text-align:right">Customer Price</th>
+              <th style="${thStyle}text-align:right">GM%</th>
+              <th style="${thStyle}text-align:right">
+                Volume (units)
+                <span class="tip" data-tip="Enter how many units of each width size you typically sell.
+The Weighted GM% at the bottom is calculated from these values.">?</span>
+              </th>
+              <th style="${thStyle}text-align:right">Revenue</th>
+              <th style="${thStyle}text-align:right">Margin $</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsData.map(({ w, tot, vol, rev, marg }) => `
+              <tr>
+                <td style="${tdStyle("left")}">${w}"</td>
+                <td style="${tdStyle("right")}">${money(tot.msrp)}</td>
+                <td style="${tdStyle("right")}">${money(tot.unitPrice)}</td>
+                <td style="${tdStyle("right")}">${pct(tot.grossMargin)}</td>
+                <td style="${tdStyle("right")}">
+                  <input type="number" min="0" step="1"
+                    value="${vol || ""}" placeholder="0"
+                    class="wt-vol-input" data-width="${w}">
+                </td>
+                <td style="${tdStyle("right")}">${vol > 0 ? money(rev)  : "—"}</td>
+                <td style="${tdStyle("right")}">${vol > 0 ? money(marg) : "—"}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+          <tfoot>
+            <tr class="wt-result-row">
+              <td style="padding:10px 10px;border-top:2px solid var(--line)">
+                Weighted Average
+                <span class="tip" data-tip="Weighted GM% = Σ[(Price−Cost)×Volume] / Σ[Price×Volume]
+Revenue-weighted: sizes with more volume and/or higher prices carry more weight.
+This replaces manually picking a single size.">?</span>
+              </td>
+              <td style="padding:10px 10px;text-align:right;border-top:2px solid var(--line)">—</td>
+              <td style="padding:10px 10px;text-align:right;border-top:2px solid var(--line)">—</td>
+              <td style="padding:10px 10px;text-align:right;border-top:2px solid var(--line)" class="wt-gm-highlight">
+                ${wtGM !== null ? pct(wtGM) : "—"}
+              </td>
+              <td style="padding:10px 10px;text-align:right;border-top:2px solid var(--line)">${totalUnits || "—"}</td>
+              <td style="padding:10px 10px;text-align:right;border-top:2px solid var(--line)">${totalRevenue > 0 ? money(totalRevenue) : "—"}</td>
+              <td style="padding:10px 10px;text-align:right;border-top:2px solid var(--line)">${totalMarginDollar > 0 ? money(totalMarginDollar) : "—"}</td>
+            </tr>
+          </tfoot>
+        </table>`;
+
+      // Re-attach change listeners after rebuilding
+      document.querySelectorAll(".wt-vol-input").forEach(inp => {
+        inp.addEventListener("input", () => {
+          widthVolumes[Number(inp.dataset.width)] = Number(inp.value) || 0;
+          renderWeightedAnalysis(height, grid, controlSystemName, topTreatmentName, costFactor, panels);
+        });
+      });
+    }
+
+    /* ──────────────────────────────────────────────────────────────────
+       F2. WEIGHTED MARGIN KPI  (ADDED — Requirement 1)
+
+       Updates the 6th KPI card "Weighted Gross Margin".
+       Uses the widthVolumes map (same as renderWeightedAnalysis).
+       If no volumes are set yet, auto-applies the TYPICAL_MIX preset
+       so there is always a meaningful value once a grid is chosen.
+
+       Height: uses the entered value, or the median standard height
+       (72") when no height is provided — so the card works without
+       requiring the user to enter specific dimensions.
+    ────────────────────────────────────────────────────────────────── */
+    const TYPICAL_MIX_CONST = { 24:80, 30:120, 36:180, 48:220, 60:150, 72:100, 84:60, 96:35, 107:15, 108:15, 117:10, 119:10 };
+    let _wtdAutoApplied = false; // tracks if auto-preset was applied
+
+    function updateWeightedMarginKpi(height, grid, controlSystemName, topTreatmentName, costFactor, panels) {
+      const el     = document.getElementById("wtdMarginKpi");
+      const noteEl = document.getElementById("wtdMarginNote");
+
+      if (!grid || !controlSystemName || !topTreatmentName || !Number.isFinite(costFactor)) {
+        el.textContent    = "—";
+        noteEl.textContent = "Select a grid";
+        el.style.color    = "inherit";
+        return;
+      }
+
+      // Use entered height or median standard height (72") as fallback
+      const h = (Number.isFinite(height) && height > 0) ? height : 72;
+
+      // Auto-apply typical mix on first call for this grid (so card is never blank)
+      const widths = gridWidths[grid];
+      const anyVolume = widths.some(w => (widthVolumes[w] || 0) > 0);
+      if (!anyVolume) {
+        widths.forEach(w => { widthVolumes[w] = TYPICAL_MIX_CONST[w] || 50; });
+      }
+
+      try {
+        const { wtGM, totalUnits } = calcWeightedMargin(h, grid, controlSystemName, topTreatmentName, costFactor, panels);
+        if (wtGM === null) {
+          el.textContent    = "—";
+          noteEl.textContent = "Enter volumes in the table below";
+          el.style.color    = "inherit";
+        } else {
+          el.textContent    = pct(wtGM);
+          el.style.color    = "inherit";
+          noteEl.textContent = `${totalUnits} units · h=${h}"`;
+        }
+      } catch (_) {
+        el.textContent    = "—";
+        noteEl.textContent = "Calculation error";
+        el.style.color    = "inherit";
+      }
+    }
+
+    /* ──────────────────────────────────────────────────────────────────
+       E2. INCREMENTAL MARGIN MATRIX  (ADDED — Requirement 2 extended)
+
+       Builds a full grid × grid matrix at the current height/width.
+       Each cell (row=FROM, col=TO):
+         With volume: Δ Margin $ = (margin/unit_to − margin/unit_from) × vol
+         Without vol: Δ GM%
+       Diagonal cells show the grid's own GM% (reference).
+    ────────────────────────────────────────────────────────────────── */
+    function renderIncrementalMatrix(height, width, controlSystemName, topTreatmentName, costFactor, panels, volume) {
+      const panel = document.getElementById("imPanel");
+
+      if (!Number.isFinite(height) || !Number.isFinite(width) || !controlSystemName || !topTreatmentName || !Number.isFinite(costFactor)) {
+        panel.style.display = "none";
+        return;
+      }
+
+      panel.style.display = "block";
+
+      const vol      = volume || 0;
+      const allGrids = Object.keys(shadeCostToMsrp);
+
+      document.getElementById("imVolPill").textContent =
+        vol > 0 ? `Volume: ${vol} units` : "Volume: — (mostrando Δ GM%)";
+
+      // Pre-compute totals for every grid (avoids redundant calls)
+      const totals = {};
+      allGrids.forEach(g => {
+        try { totals[g] = totalMotor(height, width, g, controlSystemName, topTreatmentName, costFactor, panels); }
+        catch (_) { totals[g] = null; }
+      });
+
+      // Header row
+      document.getElementById("imHead").innerHTML = `<tr>
+        <th style="text-align:left">From ↓ \ To →</th>
+        ${allGrids.map(g => `<th>${g}</th>`).join("")}
+        <th>GM%</th>
+      </tr>`;
+
+      // Body rows
+      document.getElementById("imBody").innerHTML = allGrids.map(fromGrid => {
+        const fromTot = totals[fromGrid];
+        if (!fromTot) return `<tr><td>${fromGrid}</td>${allGrids.map(() => '<td>—</td>').join("")}<td>—</td></tr>`;
+
+        const fromMargin = fromTot.unitPrice - fromTot.unitCost;
+
+        const cells = allGrids.map(toGrid => {
+          if (fromGrid === toGrid) {
+            // Diagonal: show own GM% as reference
+            return `<td class="im-diag">${pct(fromTot.grossMargin)}</td>`;
+          }
+          const toTot = totals[toGrid];
+          if (!toTot) return `<td>—</td>`;
+
+          const toMargin = toTot.unitPrice - toTot.unitCost;
+
+          let display, cls;
+          if (vol > 0) {
+            // Show incremental $ when volume is provided
+            const incrDollar = (toMargin - fromMargin) * vol;
+            cls = incrDollar > 0.01 ? "delta-pos" : incrDollar < -0.01 ? "delta-neg" : "";
+            display = sign(incrDollar) + money(incrDollar);
+          } else {
+            // Fall back to Δ GM% without volume
+            const deltaGM = (toTot.grossMargin ?? 0) - (fromTot.grossMargin ?? 0);
+            cls = deltaGM > 0.002 ? "delta-pos" : deltaGM < -0.002 ? "delta-neg" : "";
+            display = sign(deltaGM) + pct(deltaGM);
+          }
+          return `<td class="${cls}">${display}</td>`;
+        }).join("");
+
+        return `<tr>
+          <td><strong>${fromGrid}</strong></td>
+          ${cells}
+          <td style="color:var(--accent);font-weight:700">${pct(fromTot.grossMargin)}</td>
+        </tr>`;
+      }).join("");
+    }
+
+    /* ──────────────────────────────────────────────────────────────────
+       I. DATA IMPORT  (ADDED — Requirement 3)
+
+       Supports JSON and Excel/CSV files.
+       Data loading, calculation, and visualization are kept separate.
+
+       JSON schema expected:
+       {
+         "dataset": "My Dataset",        // optional label
+         "grid": "DRSB",                 // optional — populates grid select
+         "controlSystem": "PowerView Gen 3",
+         "topTreatment": "Cassette",
+         "height": 72,
+         "width": 60,
+         "costFactor": 0.40,
+         "volume": 500,
+         "compareGrid": "DRSD",
+         "widthVolumes": { "24": 80, "36": 180, "60": 150 }
+       }
+
+       Excel/CSV schema:
+         Row 1 = headers (case-insensitive).
+         Columns "Width" and "Volume" are required.
+         Optional config columns: Grid, Height, CostFactor, etc.
+    ────────────────────────────────────────────────────────────────── */
+
+    // ── I-a. Apply a parsed data object to the dashboard ──
+    function loadDataFromObject(data, sourceLabel) {
+      const status = document.getElementById("importStatus");
+
+      // Populate form fields from data (only when a value is present)
+      if (data.grid && fields.grid.querySelector(`option[value="${data.grid}"]`))
+        fields.grid.value = data.grid;
+      if (data.controlSystem && fields.controlSystem.querySelector(`option[value="${data.controlSystem}"]`))
+        fields.controlSystem.value = data.controlSystem;
+      if (data.topTreatment && fields.topTreatment.querySelector(`option[value="${data.topTreatment}"]`))
+        fields.topTreatment.value = data.topTreatment;
+      if (data.height   != null) fields.height.value          = data.height;
+      if (data.width    != null) fields.width.value           = data.width;
+      if (data.costFactor != null) {
+        fields.costFactor.value      = data.costFactor;
+        fields.costFactorRange.value = data.costFactor;
+      }
+      if (data.volume   != null) fields.volume.value          = data.volume;
+      if (data.compareGrid && fields.compareGrid.querySelector(`option[value="${data.compareGrid}"]`))
+        fields.compareGrid.value = data.compareGrid;
+
+      // Populate widthVolumes (volume per width)
+      if (data.widthVolumes && typeof data.widthVolumes === "object") {
+        Object.entries(data.widthVolumes).forEach(([w, v]) => {
+          widthVolumes[Number(w)] = Number(v) || 0;
+        });
+      }
+
+      const label = data.dataset ? `"${data.dataset}"` : sourceLabel;
+      status.textContent = `✓ Loaded: ${label}`;
+      status.className   = "import-status ok";
+
+      render();
+    }
+
+    // ── I-b. Parse an Excel/CSV file using SheetJS ──
+    function parseExcelFile(file) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const wb   = XLSX.read(e.target.result, { type: "binary" });
+          const ws   = wb.Sheets[wb.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
+
+          if (!rows.length) throw new Error("Spreadsheet is empty");
+
+          // Normalize header keys to lowercase
+          const normalize = k => k.toString().toLowerCase().trim().replace(/\s+/g, "");
+
+          // Detect widthVolumes from rows with Width + Volume columns
+          const widthVolsFromSheet = {};
+          let dataObj = {};
+
+          rows.forEach(row => {
+            const keys = Object.fromEntries(Object.entries(row).map(([k, v]) => [normalize(k), v]));
+            if (keys["width"] != null && keys["volume"] != null) {
+              const w = Number(keys["width"]);
+              const v = Number(keys["volume"]);
+              if (w > 0 && v >= 0) widthVolsFromSheet[w] = v;
+            }
+            // Optional single-row config columns
+            if (keys["grid"])           dataObj.grid          = String(keys["grid"]).trim();
+            if (keys["height"])         dataObj.height        = Number(keys["height"]);
+            if (keys["costfactor"])     dataObj.costFactor    = Number(keys["costfactor"]);
+            if (keys["controlsystem"])  dataObj.controlSystem = String(keys["controlsystem"]).trim();
+            if (keys["toptreatment"])   dataObj.topTreatment  = String(keys["toptreatment"]).trim();
+            if (keys["volume"] && !keys["width"]) dataObj.volume = Number(keys["volume"]);
+          });
+
+          if (Object.keys(widthVolsFromSheet).length)
+            dataObj.widthVolumes = widthVolsFromSheet;
+
+          dataObj.dataset = file.name;
+          loadDataFromObject(dataObj, file.name);
+        } catch (err) {
+          const status = document.getElementById("importStatus");
+          status.textContent = `✗ Error reading file: ${err.message}`;
+          status.className   = "import-status err";
+        }
+      };
+      reader.readAsBinaryString(file);
+    }
+
+    // ── I-c. Main file handler (dispatches by extension) ──
+    function handleFileImport(file) {
+      if (!file) return;
+      const ext = file.name.split(".").pop().toLowerCase();
+      const status = document.getElementById("importStatus");
+
+      if (ext === "json") {
+        const reader = new FileReader();
+        reader.onload = e => {
+          try {
+            const data = JSON.parse(e.target.result);
+            loadDataFromObject(data, file.name);
+          } catch (err) {
+            status.textContent = `✗ Invalid JSON: ${err.message}`;
+            status.className   = "import-status err";
+          }
+        };
+        reader.readAsText(file);
+      } else if (["xlsx", "xls", "csv"].includes(ext)) {
+        if (typeof XLSX === "undefined") {
+          status.textContent = "✗ SheetJS failed to load. Check your internet connection.";
+          status.className   = "import-status err";
+          return;
+        }
+        parseExcelFile(file);
+      } else {
+        status.textContent = "✗ Unsupported format. Use JSON, XLSX, XLS, or CSV.";
+        status.className   = "import-status err";
+      }
+    }
+
+    // ── I-d. Sample JSON structure for download/display ──
+    const SAMPLE_JSON = {
+      "dataset": "Rollers - Sample",
+      "grid": "DRSB",
+      "controlSystem": "PowerView Gen 3",
+      "topTreatment": "Cassette",
+      "height": 72,
+      "width": 60,
+      "costFactor": 0.40,
+      "volume": 500,
+      "compareGrid": "DRSD",
+      "widthVolumes": {
+        "24": 80, "30": 120, "36": 180, "48": 220,
+        "60": 150, "72": 100, "84": 60, "96": 35, "108": 15, "119": 10
+      }
+    };
+
+    /* ──────────────────────────────────────────────────────────────────
+       G. EXISTING RENDER FUNCTIONS (extended with new panels)
+    ────────────────────────────────────────────────────────────────── */
+
+    const fields = {
+      height:         document.getElementById("height"),
+      width:          document.getElementById("width"),
+      grid:           document.getElementById("grid"),
+      controlSystem:  document.getElementById("controlSystem"),
+      topTreatment:   document.getElementById("topTreatment"),
+      costFactor:     document.getElementById("costFactor"),
+      costFactorRange:document.getElementById("costFactorRange"),
+      panels:         document.getElementById("panels"),
+      panelsLabel:    document.getElementById("panelsLabel"),
+      volume:         document.getElementById("volume"),
+      compareGrid:    document.getElementById("compareGrid")
+    };
 
     function setEmptyState() {
       document.getElementById("errorBox").classList.remove("show");
-      document.getElementById("totalMsrp").textContent = "$0.00";
-      document.getElementById("totalPrice").textContent = "$0.00";
-      document.getElementById("totalCost").textContent = "$0.00";
-      document.getElementById("totalMargin").textContent = "-";
-      document.getElementById("costToMsrpText").textContent = "Cost/MSRP -";
-      document.getElementById("configText").textContent = "Waiting for configuration";
-      document.getElementById("factorText").textContent = "Cost factor -";
-      document.getElementById("maxWidthPill").textContent = "Grid limit: -";
-      document.getElementById("systemPill").textContent = "Not selected";
+      document.getElementById("totalMsrp").textContent    = "$0.00";
+      document.getElementById("totalPrice").textContent   = "$0.00";
+      document.getElementById("totalCost").textContent    = "$0.00";
+      document.getElementById("totalMargin").textContent  = "—";
+      document.getElementById("costToMsrpText").textContent = "Cost/MSRP —";
+      document.getElementById("configText").textContent   = "Waiting for configuration";
+      document.getElementById("factorText").textContent   = "Cost factor —";
+      document.getElementById("maxWidthPill").textContent = "Grid limit: —";
+      document.getElementById("systemPill").textContent   = "Not selected";
       document.getElementById("visualSubtitle").textContent = "Select the shade configuration to generate an estimate.";
       document.getElementById("specDimensions").textContent = "Not set";
-      document.getElementById("specGrid").textContent = "Not set";
+      document.getElementById("specGrid").textContent    = "Not set";
       document.getElementById("specTreatment").textContent = "Not set";
       document.getElementById("boundsNotice").textContent = "Complete the required fields to calculate the quote.";
       document.getElementById("breakdownBody").innerHTML = "";
-      document.getElementById("bars").innerHTML = "";
-      document.getElementById("configBody").innerHTML = "";
-      document.getElementById("rCall").textContent = "";
-      const shadePreview = document.getElementById("shadePreview");
-      shadePreview.style.width = "58%";
-      shadePreview.style.height = "58%";
-      shadePreview.style.left = "21%";
-      shadePreview.style.setProperty("--shade", "#d8c9ad");
+      document.getElementById("bars").innerHTML          = "";
+      document.getElementById("configBody").innerHTML    = "";
+      document.getElementById("rCall").textContent       = "";
+      document.getElementById("incrMarginKpi").textContent = "—";
+      document.getElementById("incrMarginNote").textContent = "Enter volume to activate";
+      document.getElementById("gcPanel").style.display  = "none";
+      document.getElementById("wtPanel").style.display  = "none";
+      // ADDED: reset new elements
+      document.getElementById("imPanel").style.display  = "none";
+      document.getElementById("wtdMarginKpi").textContent  = "—";
+      document.getElementById("wtdMarginNote").textContent = "Select a grid";
+      const sp = document.getElementById("shadePreview");
+      sp.style.width = "58%"; sp.style.height = "58%"; sp.style.left = "21%";
+      sp.style.setProperty("--shade", "#d8c9ad");
     }
 
     function render() {
-      const height = readNumber(fields.height, NaN);
-      const width = readNumber(fields.width, NaN);
-      const grid = fields.grid.value;
+      const height        = readNumber(fields.height, NaN);
+      const width         = readNumber(fields.width,  NaN);
+      const grid          = fields.grid.value;
       const controlSystem = fields.controlSystem.value;
-      const topTreatment = fields.topTreatment.value;
-      const costFactor = readNumber(fields.costFactor, NaN);
-      const panels = Number(fields.panels.value);
-      const errorBox = document.getElementById("errorBox");
+      const topTreatment  = fields.topTreatment.value;
+      const costFactor    = readNumber(fields.costFactor, NaN);
+      const panels        = Number(fields.panels.value);
+      const volume        = readNumber(fields.volume, 0);
+      const compareGridVal= fields.compareGrid.value || grid;
+      const errorBox      = document.getElementById("errorBox");
 
       fields.panelsLabel.hidden = controlSystem !== "PowerView Gen 3 AC Coupled";
 
       if (!Number.isFinite(height) || !Number.isFinite(width) || !grid || !controlSystem || !topTreatment || !Number.isFinite(costFactor)) {
         setEmptyState();
         fields.panelsLabel.hidden = controlSystem !== "PowerView Gen 3 AC Coupled";
+        // ADDED: still update Weighted Margin KPI even when dimensions are incomplete
+        // (falls back to median height so the card is never blank when grid is selected)
+        if (grid && controlSystem && topTreatment && Number.isFinite(costFactor)) {
+          updateWeightedMarginKpi(height, grid, controlSystem, topTreatment, costFactor, panels);
+        }
         return;
       }
 
       try {
-        const rows = motorBreakdown(height, width, grid, controlSystem, topTreatment, costFactor, panels);
+        /* ── Existing single-shade breakdown ── */
+        const rows  = motorBreakdown(height, width, grid, controlSystem, topTreatment, costFactor, panels);
         const total = rows[rows.length - 1];
         const maxWidth = gridWidths[grid][gridWidths[grid].length - 1];
         const minWidth = gridWidths[grid][0];
@@ -1055,45 +1873,67 @@
         errorBox.classList.remove("show");
         errorBox.textContent = "";
 
-        document.getElementById("totalMsrp").textContent = money(total.msrp);
-        document.getElementById("totalPrice").textContent = money(total.unitPrice);
-        document.getElementById("totalCost").textContent = money(total.unitCost);
-        document.getElementById("totalMargin").textContent = pct(total.grossMargin);
+        document.getElementById("totalMsrp").textContent    = money(total.msrp);
+        document.getElementById("totalPrice").textContent   = money(total.unitPrice);
+        document.getElementById("totalCost").textContent    = money(total.unitCost);
+        document.getElementById("totalMargin").textContent  = pct(total.grossMargin);
         document.getElementById("costToMsrpText").textContent = `Cost/MSRP ${pct(total.costToMsrp)}`;
-        document.getElementById("configText").textContent = `${grid} / ${height}" x ${width}"`;
-        document.getElementById("factorText").textContent = `Cost factor ${pct(costFactor)}`;
+        document.getElementById("configText").textContent   = `${grid} / ${height}" × ${width}"`;
+        document.getElementById("factorText").textContent   = `Cost factor ${pct(costFactor)}`;
         document.getElementById("maxWidthPill").textContent = `Grid limit: ${maxWidth}"`;
-        document.getElementById("systemPill").textContent = controlSystem;
+        document.getElementById("systemPill").textContent   = controlSystem;
         document.getElementById("visualSubtitle").textContent = `${grid} fabric grid with ${controlSystem} and ${topTreatment} top treatment.`;
-        document.getElementById("specDimensions").textContent = `${height}" x ${width}"`;
-        document.getElementById("specGrid").textContent = grid;
+        document.getElementById("specDimensions").textContent = `${height}" × ${width}"`;
+        document.getElementById("specGrid").textContent    = grid;
         document.getElementById("specTreatment").textContent = topTreatment;
 
-        const shadePreview = document.getElementById("shadePreview");
-        const previewWidth = clamp((width / maxWidth) * 72, 38, 82);
-        const previewHeight = clamp((height / heights[heights.length - 1]) * 92, 38, 88);
-        shadePreview.style.width = `${previewWidth}%`;
-        shadePreview.style.height = `${previewHeight}%`;
-        shadePreview.style.left = `${(100 - previewWidth) / 2}%`;
-        shadePreview.style.setProperty("--shade", grid === "DRSA" ? "#d9c3a3" :
-          grid === "DRSB" ? "#c9d4cd" :
-          grid === "DRSC" ? "#b9c7d7" :
-          grid === "DRSD" ? "#d6c5b7" :
-          grid === "DRSE" ? "#c8beb2" :
-          grid === "DRSF" ? "#b8c1b1" : "#c3b8cf");
+        /* ── INCREMENTAL MARGIN KPI (5th card) ──────────────────────────
+           Compare current grid vs. compareGridVal (defaults to current).
+           Incremental margin $ = Δ (price−cost) per unit × volume
+        ─────────────────────────────────────────────────────────────── */
+        if (compareGridVal && compareGridVal !== grid && volume > 0) {
+          const cmpTotal  = totalMotor(height, width, compareGridVal, controlSystem, topTreatment, costFactor, panels);
+          const baseMargin= (total.unitPrice    - total.unitCost) * volume;
+          const cmpMargin = (cmpTotal.unitPrice - cmpTotal.unitCost) * volume;
+          const incrDollar = cmpMargin - baseMargin;
+          const deltaGM    = (cmpTotal.grossMargin ?? 0) - (total.grossMargin ?? 0);
+          document.getElementById("incrMarginKpi").textContent    = sign(incrDollar) + money(incrDollar);
+          document.getElementById("incrMarginKpi").style.color    = incrDollar > 0 ? "#15803d" : incrDollar < 0 ? "#b91c1c" : "inherit";
+          document.getElementById("incrMarginNote").textContent   = `${grid} → ${compareGridVal}  (Δ GM ${sign(deltaGM)}${pct(deltaGM)})`;
+        } else if (volume > 0 && compareGridVal === grid) {
+          document.getElementById("incrMarginKpi").textContent   = "—";
+          document.getElementById("incrMarginNote").textContent  = "Same as current grid";
+          document.getElementById("incrMarginKpi").style.color   = "inherit";
+        } else {
+          document.getElementById("incrMarginKpi").textContent   = "—";
+          document.getElementById("incrMarginNote").textContent  = volume <= 0 ? "Enter volume to activate" : "Select a different baseline grid";
+          document.getElementById("incrMarginKpi").style.color   = "inherit";
+        }
 
+        /* ── Shade preview animation ── */
+        const sp = document.getElementById("shadePreview");
+        const pw = clamp((width / maxWidth) * 72, 38, 82);
+        const ph = clamp((height / heights[heights.length - 1]) * 92, 38, 88);
+        sp.style.width  = `${pw}%`;
+        sp.style.height = `${ph}%`;
+        sp.style.left   = `${(100 - pw) / 2}%`;
+        sp.style.setProperty("--shade",
+          grid === "DRSA" ? "#d9c3a3" : grid === "DRSB" ? "#c9d4cd" :
+          grid === "DRSC" ? "#b9c7d7" : grid === "DRSD" ? "#d6c5b7" :
+          grid === "DRSE" ? "#c8beb2" : grid === "DRSF" ? "#b8c1b1" : "#c3b8cf");
+
+        /* ── Bounds notice ── */
         const notice = [];
-        if (height < heights[0] || height > heights[heights.length - 1]) {
-          notice.push(`Height is outside the table range: the motor clamps between ${heights[0]}" and ${heights[heights.length - 1]}".`);
-        }
-        if (width < minWidth || width > maxWidth) {
-          notice.push(`Width is outside the ${grid} table range: the motor clamps between ${minWidth}" and ${maxWidth}".`);
-        }
+        if (height < heights[0] || height > heights[heights.length - 1])
+          notice.push(`Height outside table range: clamped to ${heights[0]}"–${heights[heights.length - 1]}".`);
+        if (width < minWidth || width > maxWidth)
+          notice.push(`Width outside ${grid} range: clamped to ${minWidth}"–${maxWidth}".`);
         document.getElementById("boundsNotice").textContent = notice.length
           ? notice.join(" ")
-          : `Current ${grid} range: height ${heights[0]}"-${heights[heights.length - 1]}", width ${minWidth}"-${maxWidth}".`;
+          : `${grid} range: H ${heights[0]}"–${heights[heights.length - 1]}", W ${minWidth}"–${maxWidth}".`;
 
-        document.getElementById("breakdownBody").innerHTML = rows.map((row) => `
+        /* ── MSRP composition breakdown ── */
+        document.getElementById("breakdownBody").innerHTML = rows.map(row => `
           <tr>
             <td>${labels[row.component] || row.component}</td>
             <td>${money(row.msrp)}</td>
@@ -1101,34 +1941,28 @@
             <td>${money(row.unitCost)}</td>
             <td>${pct(row.grossMargin)}</td>
             <td>${pct(row.costToMsrp)}</td>
-          </tr>
-        `).join("");
+          </tr>`).join("");
 
-        const components = rows.slice(0, 3);
-        const maxMsrp = Math.max(...components.map((row) => row.msrp), 1);
-        document.getElementById("bars").innerHTML = components.map((row) => {
-          const widthPct = Math.max((row.msrp / maxMsrp) * 100, row.msrp > 0 ? 2 : 0);
-          return `
-            <div class="bar-row">
-              <span>${labels[row.component] || row.component}</span>
-              <div class="bar-track">
-                <div class="bar-fill" style="width:${widthPct}%"></div>
-              </div>
-              <strong>${money(row.msrp)}</strong>
-            </div>
-          `;
+        const comps   = rows.slice(0, 3);
+        const maxMsrp = Math.max(...comps.map(r => r.msrp), 1);
+        document.getElementById("bars").innerHTML = comps.map(row => {
+          const wp = Math.max((row.msrp / maxMsrp) * 100, row.msrp > 0 ? 2 : 0);
+          return `<div class="bar-row">
+            <span>${labels[row.component] || row.component}</span>
+            <div class="bar-track"><div class="bar-fill" style="width:${wp}%"></div></div>
+            <strong>${money(row.msrp)}</strong>
+          </div>`;
         }).join("");
 
+        /* ── Current configuration table ── */
         document.getElementById("configBody").innerHTML = `
           <tr><th>height</th><td>${height}"</td><th>width</th><td>${width}"</td></tr>
           <tr><th>grid</th><td>${grid}</td><th>TopTreatmentName</th><td>${topTreatment}</td></tr>
           <tr><th>ControlSystemName</th><td>${controlSystem}</td><th>cost_factor</th><td>${costFactor.toFixed(2)}</td></tr>
-          <tr><th>panels</th><td>${controlSystem === "PowerView Gen 3 AC Coupled" ? panels : "NULL"}</td><th>Base cost/MSRP</th><td>${pct(shadeCostToMsrp[grid])}</td></tr>
-        `;
+          <tr><th>panels</th><td>${controlSystem === "PowerView Gen 3 AC Coupled" ? panels : "NULL"}</td><th>Base cost/MSRP</th><td>${pct(shadeCostToMsrp[grid])}</td></tr>`;
 
-        const panelArg = controlSystem === "PowerView Gen 3 AC Coupled"
-          ? `,\n  panels = ${panels}`
-          : "";
+        /* ── R call ── */
+        const panelArg = controlSystem === "PowerView Gen 3 AC Coupled" ? `,\n  panels = ${panels}` : "";
         document.getElementById("rCall").textContent =
 `print_motor_breakdown(
   height = ${height},
@@ -1138,38 +1972,124 @@
   TopTreatmentName = "${topTreatment}",
   cost_factor = ${costFactor.toFixed(2)}${panelArg}
 )`;
+
+        /* ── NEW: Grid Comparison Table ── */
+        renderGridComparison(height, width, controlSystem, topTreatment, costFactor, panels, compareGridVal, volume);
+
+        /* ── NEW: Weighted Size Analysis ── */
+        renderWeightedAnalysis(height, grid, controlSystem, topTreatment, costFactor, panels);
+
+        /* ADDED: Incremental Margin Matrix (full grid×grid) ── */
+        renderIncrementalMatrix(height, width, controlSystem, topTreatment, costFactor, panels, volume);
+
+        /* ADDED: Weighted Margin KPI card (6th card) ── */
+        updateWeightedMarginKpi(height, grid, controlSystem, topTreatment, costFactor, panels);
+
       } catch (error) {
         errorBox.textContent = error.message;
         errorBox.classList.add("show");
       }
     }
 
+    /* ──────────────────────────────────────────────────────────────────
+       H. EVENT WIRING & INITIALIZATION
+    ────────────────────────────────────────────────────────────────── */
+
     fillOptions(fields.grid, Object.keys(shadeCostToMsrp), "", "Select fabric grid");
     fillOptions(fields.controlSystem, controlSystems, "", "Select control system");
     fillOptions(fields.topTreatment, topTreatments, "", "Select top treatment");
 
-    document.querySelectorAll("input, select").forEach((element) => {
-      element.addEventListener("input", () => {
-        if (element === fields.costFactor) fields.costFactorRange.value = fields.costFactor.value;
-        if (element === fields.costFactorRange) fields.costFactor.value = fields.costFactorRange.value;
+    // Populate comparison grid select (same options as grid)
+    fillOptions(fields.compareGrid, Object.keys(shadeCostToMsrp), "", "Same as selected grid");
+
+    // Listen on all form inputs + the new volume/compareGrid
+    document.querySelectorAll("input, select").forEach(el => {
+      el.addEventListener("input", () => {
+        if (el === fields.costFactor)     fields.costFactorRange.value = fields.costFactor.value;
+        if (el === fields.costFactorRange) fields.costFactor.value     = fields.costFactorRange.value;
         render();
       });
-      element.addEventListener("change", render);
+      el.addEventListener("change", render);
     });
 
+    /* ── Volume distribution presets ── */
+
+    // Typical size mix: reflects common distribution (more mid-range widths)
+    const TYPICAL_MIX = { 24: 80, 30: 120, 36: 180, 48: 220, 60: 150, 72: 100, 84: 60, 96: 35, 107: 15, 108: 15, 117: 10, 119: 10 };
+
+    document.getElementById("presetUniform").addEventListener("click", () => {
+      const currentGrid = fields.grid.value;
+      if (!currentGrid) return;
+      gridWidths[currentGrid].forEach(w => { widthVolumes[w] = 100; });
+      render();
+    });
+
+    document.getElementById("presetTypical").addEventListener("click", () => {
+      const currentGrid = fields.grid.value;
+      if (!currentGrid) return;
+      gridWidths[currentGrid].forEach(w => { widthVolumes[w] = TYPICAL_MIX[w] || 50; });
+      render();
+    });
+
+    document.getElementById("presetClear").addEventListener("click", () => {
+      Object.keys(widthVolumes).forEach(k => { widthVolumes[k] = 0; });
+      render();
+    });
+
+    /* ── Reset button ── */
     document.getElementById("resetBtn").addEventListener("click", () => {
-      fields.height.value = "";
-      fields.width.value = "";
-      fields.grid.value = "";
-      fields.controlSystem.value = "";
-      fields.topTreatment.value = "";
-      fields.costFactor.value = "";
-      fields.costFactorRange.value = 0.4;
-      fields.panels.value = 3;
+      fields.height.value         = "";
+      fields.width.value          = "";
+      fields.grid.value           = "";
+      fields.controlSystem.value  = "";
+      fields.topTreatment.value   = "";
+      fields.costFactor.value     = "";
+      fields.costFactorRange.value= 0.4;
+      fields.panels.value         = 3;
+      fields.volume.value         = "";
+      fields.compareGrid.value    = "";
+      Object.keys(widthVolumes).forEach(k => { widthVolumes[k] = 0; });
       render();
     });
 
     document.getElementById("printBtn").addEventListener("click", () => window.print());
+
+    /* ADDED ── Data Import event listeners (Section I wiring) ── */
+
+    // File input change
+    document.getElementById("importFile").addEventListener("change", e => {
+      const file = e.target.files[0];
+      if (file) handleFileImport(file);
+      e.target.value = ""; // allow re-selecting the same file
+    });
+
+    // Drag-and-drop on sidebar
+    const sidebarEl = document.querySelector("aside");
+    sidebarEl.addEventListener("dragover", e => { e.preventDefault(); sidebarEl.style.outline = "2px dashed var(--accent)"; });
+    sidebarEl.addEventListener("dragleave", () => { sidebarEl.style.outline = ""; });
+    sidebarEl.addEventListener("drop", e => {
+      e.preventDefault();
+      sidebarEl.style.outline = "";
+      const file = e.dataTransfer.files[0];
+      if (file) handleFileImport(file);
+    });
+
+    // Sample JSON button — downloads a sample .json file
+    document.getElementById("importSampleBtn").addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(SAMPLE_JSON, null, 2)], { type: "application/json" });
+      const a    = Object.assign(document.createElement("a"), {
+        href: URL.createObjectURL(blob),
+        download: "exemplo_rollers.json"
+      });
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+
+    // Clear import
+    document.getElementById("importClearBtn").addEventListener("click", () => {
+      document.getElementById("importStatus").textContent = "No file loaded";
+      document.getElementById("importStatus").className  = "import-status";
+    });
 
     render();
   </script>

@@ -1,0 +1,1093 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hunter Douglas — Margin & Volume Dashboard</title>
+
+  <!-- SheetJS: enables loading real .xlsx / .xls files from the "Load Data" button -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+  <style>
+    /* ── Design tokens (Power BI palette) ─────────────────────────────────── */
+    :root {
+      --bg:           #f3f2f1;
+      --surface:      #ffffff;
+      --hdr:          #1f2937;
+      --border:       #e1dfdd;
+      --text:         #252423;
+      --muted:        #605e5c;
+      --accent:       #0078d4;
+      --accent-lt:    #deecf9;
+      --green:        #107c10;
+      --green-lt:     #dff6dd;
+      --amber:        #c87600;
+      --amber-lt:     #fff4ce;
+      --teal:         #00897b;
+      --teal-lt:      #e0f2f1;
+      --red:          #a4262c;
+      --red-lt:       #fde7e9;
+      --shadow:       0 1px 4px rgba(0,0,0,.09);
+      --r:            4px;
+    }
+
+    /* ── Reset ─────────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.4;
+      min-height: 100vh;
+    }
+
+    /* ── Header ────────────────────────────────────────────────────────────── */
+    .hdr {
+      background: var(--hdr);
+      color: #fff;
+      height: 54px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .hdr-title { font-size: 15px; font-weight: 700; letter-spacing: -.1px; }
+    .hdr-sub   { font-size: 11px; opacity: .5; margin-top: 2px; }
+    .hdr-btns  { display: flex; align-items: center; gap: 8px; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      min-height: 30px; padding: 4px 14px;
+      border: 1px solid rgba(255,255,255,.28); border-radius: var(--r);
+      background: transparent; color: #fff;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      transition: background .15s;
+    }
+    .btn:hover { background: rgba(255,255,255,.12); }
+    #fileInput { display: none; }
+
+    /* ── Sample-data notice bar ─────────────────────────────────────────────── */
+    .notice-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 24px;
+      background: var(--amber-lt);
+      border-bottom: 1px solid #fde7a8;
+      font-size: 12px; color: #7d5100;
+    }
+    .notice-bar.hidden { display: none; }
+
+    /* ── Filter bar ─────────────────────────────────────────────────────────── */
+    .fbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      height: 46px;
+      padding: 0 24px;
+      display: flex; align-items: center; gap: 18px;
+      overflow-x: auto;
+    }
+    .fbar-lbl {
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .5px;
+      color: var(--muted); white-space: nowrap;
+    }
+    .fbar select {
+      min-height: 28px; padding: 3px 10px;
+      border: 1px solid var(--border); border-radius: var(--r);
+      font-size: 13px; background: #fff; color: var(--text);
+      cursor: pointer; outline: none;
+    }
+    .fbar select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(0,120,212,.15); }
+    .fbar-div { width: 1px; height: 22px; background: var(--border); flex-shrink: 0; }
+
+    /* ── Page body ──────────────────────────────────────────────────────────── */
+    .page { padding: 20px 24px; display: grid; gap: 16px; }
+
+    /* ── Tooltip ────────────────────────────────────────────────────────────── */
+    .tip {
+      position: relative; display: inline-flex; align-items: center;
+      justify-content: center;
+      width: 15px; height: 15px; border-radius: 50%;
+      background: var(--border); color: var(--muted);
+      font-size: 9px; font-weight: 900; cursor: help; flex-shrink: 0;
+      vertical-align: middle;
+    }
+    .tip::before {
+      content: attr(data-tip);
+      position: absolute; bottom: calc(100% + 8px); left: 50%;
+      transform: translateX(-50%);
+      background: #1f2937; color: #fff;
+      padding: 8px 12px; border-radius: var(--r);
+      font-size: 12px; font-weight: 400; line-height: 1.55;
+      white-space: pre-line; min-width: 210px; max-width: 300px;
+      opacity: 0; pointer-events: none;
+      transition: opacity .15s; z-index: 300;
+      text-transform: none; letter-spacing: 0;
+    }
+    .tip:hover::before { opacity: 1; }
+
+    /* ── KPI row ────────────────────────────────────────────────────────────── */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .kpi {
+      background: var(--surface); border: 1px solid var(--border);
+      border-top: 3px solid var(--accent); border-radius: var(--r);
+      padding: 16px 18px; box-shadow: var(--shadow);
+    }
+    .kpi.green  { border-top-color: var(--green); }
+    .kpi.amber  { border-top-color: var(--amber); }
+    .kpi.teal   { border-top-color: var(--teal);  }
+    .kpi-lbl {
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .5px;
+      color: var(--muted); display: flex; align-items: center; gap: 5px;
+    }
+    .kpi-val  { font-size: clamp(22px,2.2vw,30px); font-weight: 700; margin-top: 8px; line-height: 1.1; }
+    .kpi-note { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+    /* ── Card / Panel ───────────────────────────────────────────────────────── */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .ph {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 13px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .ph-title {
+      font-size: 14px; font-weight: 700;
+      display: flex; align-items: center; gap: 7px;
+    }
+    .ph-sub { font-size: 12px; color: var(--muted); white-space: nowrap; }
+    .pb { padding: 18px; }
+
+    /* ── Two-column panels row ──────────────────────────────────────────────── */
+    .panels-row { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 16px; }
+
+    /* ── Grid performance table ─────────────────────────────────────────────── */
+    .gtbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .gtbl th {
+      padding: 9px 12px; text-align: right;
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .5px; color: var(--muted);
+      border-bottom: 2px solid var(--border); white-space: nowrap;
+    }
+    .gtbl th:first-child { text-align: left; }
+    .gtbl td { padding: 10px 12px; border-bottom: 1px solid #f3f2f1; text-align: right; vertical-align: middle; }
+    .gtbl td:first-child { text-align: left; }
+    .gtbl tbody tr:last-child td { border-bottom: 0; font-weight: 700; background: #fafafa; }
+    .gtbl tbody tr:not(:last-child):hover td { background: #f5f4f3; cursor: pointer; }
+
+    /* grid colour badges */
+    .gbadge { display: inline-flex; padding: 2px 9px; border-radius: 3px; font-size: 11px; font-weight: 700; }
+    .g-lf1   { background: var(--accent-lt); color: #005a9e; }
+    .g-lf2   { background: var(--green-lt);  color: #0b6a0b; }
+    .g-lf3   { background: var(--amber-lt);  color: #7d5100; }
+    .g-lf4   { background: var(--red-lt);    color: var(--red); }
+    .g-total { background: #f3f2f1; color: var(--muted); }
+    .g-other { background: #f0edf9; color: #5c2d91; }
+
+    /* inline margin bar inside table */
+    .mbar { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+    .mbar-track { width: 72px; height: 8px; border-radius: 99px; background: #f0efee; overflow: hidden; flex-shrink: 0; }
+    .mbar-fill  { height: 100%; border-radius: 99px; background: var(--teal); transition: width .3s; }
+
+    /* ── Incremental margin calculator ──────────────────────────────────────── */
+    .incr-pair {
+      display: grid; grid-template-columns: 1fr 28px 1fr;
+      align-items: center; gap: 10px; margin-bottom: 16px;
+    }
+    .incr-pair label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); display: block; margin-bottom: 5px; }
+    .incr-pair select {
+      width: 100%; min-height: 38px; padding: 7px 10px;
+      border: 1px solid var(--border); border-radius: var(--r);
+      font-size: 14px; font-weight: 700; background: #fff; outline: none; cursor: pointer;
+    }
+    .incr-pair select:focus { border-color: var(--accent); }
+    .incr-arrow { text-align: center; font-size: 18px; color: var(--muted); margin-top: 18px; user-select: none; }
+
+    .incr-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .ic {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 12px 14px;
+    }
+    .ic-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+    .ic-val  { font-size: 20px; font-weight: 700; margin-top: 5px; }
+    .ic-val.pos { color: var(--green); }
+    .ic-val.neg { color: var(--red);   }
+    .ic-val.neu { color: var(--muted); }
+
+    /* formula callout */
+    .formula-box {
+      margin-top: 14px; padding: 10px 13px;
+      background: #f8f8f7; border-left: 3px solid var(--border);
+      border-radius: 0 var(--r) var(--r) 0;
+      font-family: 'Courier New', monospace;
+      font-size: 11px; line-height: 1.75; color: var(--muted);
+    }
+    .formula-box strong { color: var(--text); }
+
+    /* ── Detail table ───────────────────────────────────────────────────────── */
+    .dtbl-scroll { max-height: 370px; overflow-y: auto; overflow-x: auto; }
+    .dtbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .dtbl th {
+      padding: 9px 12px; text-align: right;
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .5px; color: var(--muted);
+      border-bottom: 2px solid var(--border);
+      position: sticky; top: 0; background: #fff; z-index: 2;
+      cursor: pointer; user-select: none; white-space: nowrap;
+    }
+    .dtbl th:first-child, .dtbl th:nth-child(2), .dtbl th:nth-child(3) { text-align: left; }
+    .dtbl th:hover { background: #f5f4f3; }
+    .sort-ic { font-size: 9px; margin-left: 3px; opacity: .3; }
+    .dtbl th.sort-asc  .sort-ic { opacity: 1; }
+    .dtbl th.sort-desc .sort-ic { opacity: 1; }
+    .dtbl td { padding: 8px 12px; border-bottom: 1px solid #f3f2f1; text-align: right; }
+    .dtbl td:first-child, .dtbl td:nth-child(2), .dtbl td:nth-child(3) { text-align: left; }
+    .dtbl tbody tr:hover td { background: #f5f4f3; }
+    .dtbl tfoot td {
+      font-weight: 700; background: #fafafa;
+      border-top: 2px solid var(--border); border-bottom: 0;
+      position: sticky; bottom: 0; z-index: 1;
+    }
+
+    /* product tag pills */
+    .tag { display: inline-flex; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 700; }
+    .tag-d { background: var(--accent-lt); color: #005a9e; }
+    .tag-r { background: var(--green-lt);  color: #0b6a0b; }
+
+    /* mini volume bar */
+    .vbar { display: inline-flex; align-items: center; gap: 6px; }
+    .vbt  { width: 44px; height: 5px; border-radius: 99px; background: #f0efee; overflow: hidden; }
+    .vbf  { height: 100%; border-radius: 99px; background: var(--accent); }
+
+    /* ── Footer ─────────────────────────────────────────────────────────────── */
+    .footer {
+      padding: 10px 24px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 11px; color: var(--muted);
+    }
+
+    /* ── Responsive ─────────────────────────────────────────────────────────── */
+    @media (max-width: 1200px) { .kpi-row    { grid-template-columns: repeat(2,1fr); } }
+    @media (max-width:  900px) { .panels-row { grid-template-columns: 1fr; } }
+    @media (max-width:  640px) {
+      .kpi-row { grid-template-columns: 1fr; }
+      .page    { padding: 12px; }
+      .incr-pair    { grid-template-columns: 1fr; }
+      .incr-arrow   { display: none; }
+      .incr-cards   { grid-template-columns: 1fr; }
+      .hdr, .fbar   { padding: 0 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════════
+     HEADER
+═════════════════════════════════════════════════════════════════════ -->
+<header class="hdr">
+  <div>
+    <div class="hdr-title">Hunter Douglas — Margin &amp; Volume Dashboard</div>
+    <div class="hdr-sub" id="dataSource">Sample data loaded — upload a file to use real data</div>
+  </div>
+  <div class="hdr-btns">
+    <label for="fileInput" class="btn">↑ Load Data (JSON / Excel)</label>
+    <input type="file" id="fileInput" accept=".json,.xlsx,.xls">
+  </div>
+</header>
+
+<!-- ════════════════════════════════════════════════════════════════
+     SAMPLE-DATA NOTICE
+═════════════════════════════════════════════════════════════════════ -->
+<div class="notice-bar" id="noticeBanner">
+  ⚠ Showing built-in sample data.
+  Use the <strong>Load Data</strong> button to upload a real <code>.json</code> or <code>.xlsx</code> file.
+  Required columns: <code>product_line, grid, size, volume, msrp, cost</code>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     FILTER BAR — no "size" dropdown: size is used only as a weight
+═════════════════════════════════════════════════════════════════════ -->
+<div class="fbar">
+  <span class="fbar-lbl">Product Line</span>
+  <select id="filterProduct">
+    <option value="all">All Lines</option>
+  </select>
+  <div class="fbar-div"></div>
+  <span class="fbar-lbl">Grid</span>
+  <select id="filterGrid">
+    <option value="all">All Grids</option>
+  </select>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     MAIN PAGE
+═════════════════════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <!-- ── KPI ROW ───────────────────────────────────────────────── -->
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="kpi-lbl">
+        Total Volume
+        <span class="tip" data-tip="Total units sold across all selected records.">?</span>
+      </div>
+      <div class="kpi-val" id="kpiVolume">—</div>
+      <div class="kpi-note" id="kpiVolumeNote">units</div>
+    </div>
+
+    <!--
+      WEIGHTED AVERAGE GROSS MARGIN
+      Formula: Σ[(MSRP − Cost) × Volume] / Σ[MSRP × Volume]
+      Sizes are NOT selected manually — each size contributes proportionally
+      to total revenue, so large high-value SKUs carry more weight.
+    -->
+    <div class="kpi green">
+      <div class="kpi-lbl">
+        Weighted Avg GM%
+        <span class="tip"
+          data-tip="Weighted Average Gross Margin (volume-and-price weighted):
+= Total Margin $ / Total Revenue
+= Σ[(MSRP − Cost) × Volume] / Σ[MSRP × Volume]
+
+No manual size selection needed — every size contributes
+proportionally to its revenue share.">?</span>
+      </div>
+      <div class="kpi-val" id="kpiWtGM">—</div>
+      <div class="kpi-note">weighted by revenue across all sizes</div>
+    </div>
+
+    <div class="kpi amber">
+      <div class="kpi-lbl">
+        Total Revenue
+        <span class="tip" data-tip="Total Revenue = Σ(MSRP × Volume) for selected records.">?</span>
+      </div>
+      <div class="kpi-val" id="kpiRevenue">—</div>
+      <div class="kpi-note">MSRP-based</div>
+    </div>
+
+    <div class="kpi teal">
+      <div class="kpi-lbl">
+        Total Gross Margin $
+        <span class="tip" data-tip="Total Gross Margin $ = Σ[(MSRP − Cost) × Volume]
+Absolute dollar margin captured across all selected records.">?</span>
+      </div>
+      <div class="kpi-val" id="kpiMarginDollar">—</div>
+      <div class="kpi-note" id="kpiMarginNote">absolute</div>
+    </div>
+  </div>
+
+  <!-- ── PANELS ROW ────────────────────────────────────────────── -->
+  <div class="panels-row">
+
+    <!-- Grid Performance Table -->
+    <div class="panel">
+      <div class="ph">
+        <div class="ph-title">
+          Grid Performance
+          <span class="tip"
+            data-tip="Per-grid aggregated stats.
+Wtd GM% = Total Margin $ / Total Revenue for each grid.
+Click a data row to pre-select that grid in the
+Incremental Margin Calculator.">?</span>
+        </div>
+        <span class="ph-sub" id="gridPanelSub">—</span>
+      </div>
+      <!-- no extra padding; table fills the card edge-to-edge -->
+      <div style="overflow:auto">
+        <table class="gtbl" id="gridTable">
+          <thead>
+            <tr>
+              <th>Grid</th>
+              <th>Volume <span class="tip" data-tip="Units sold in this grid.">?</span></th>
+              <th>Revenue</th>
+              <th>
+                Wtd GM%
+                <span class="tip"
+                  data-tip="Weighted GM% = Margin $ / Revenue for this grid.
+Each size is weighted by its own revenue,
+eliminating the need to pick a size manually.">?</span>
+              </th>
+              <th>Margin $</th>
+              <th style="min-width:140px">GM% Bar</th>
+            </tr>
+          </thead>
+          <tbody id="gridTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Incremental Margin Calculator -->
+    <div class="panel">
+      <div class="ph">
+        <div class="ph-title">
+          Incremental Margin Calculator
+          <span class="tip"
+            data-tip="Shows the additional gross margin ($) captured
+when customers move from Grid A to Grid B.
+
+Formula:
+  Δ Margin $ = (Wtd GM%_B − Wtd GM%_A) × Revenue_A
+
+Revenue_A = total MSRP revenue of all Grid A records.
+A positive result means Grid B is more profitable.">?</span>
+        </div>
+      </div>
+      <div class="pb">
+        <!--
+          INCREMENTAL MARGIN SELECTOR
+          Users pick any two grids; the calculation updates instantly.
+          No hardcoded grid pair — works for any LF1→LF4 combination
+          or whatever grids exist in the loaded dataset.
+        -->
+        <div class="incr-pair">
+          <div>
+            <label for="incrA">From (Grid A)</label>
+            <select id="incrA"></select>
+          </div>
+          <div class="incr-arrow">→</div>
+          <div>
+            <label for="incrB">To (Grid B)</label>
+            <select id="incrB"></select>
+          </div>
+        </div>
+
+        <!-- Result cards -->
+        <div class="incr-cards">
+          <div class="ic">
+            <div class="ic-lbl">Grid A — Wtd GM% <span class="tip" data-tip="Weighted gross margin % for Grid A.">?</span></div>
+            <div class="ic-val neu" id="incrGmA">—</div>
+          </div>
+          <div class="ic">
+            <div class="ic-lbl">Grid B — Wtd GM% <span class="tip" data-tip="Weighted gross margin % for Grid B.">?</span></div>
+            <div class="ic-val neu" id="incrGmB">—</div>
+          </div>
+          <div class="ic">
+            <div class="ic-lbl">Δ GM% <span class="tip" data-tip="Difference: GM%_B − GM%_A.
+Positive = Grid B has better margins.">?</span></div>
+            <div class="ic-val" id="incrDeltaPct">—</div>
+          </div>
+          <div class="ic">
+            <!--
+              INCREMENTAL MARGIN $
+              = (Wtd GM%_B − Wtd GM%_A) × Revenue_A
+              Answers: "if the customers in Grid A were priced at
+              Grid B margin rates, how much more margin do we capture?"
+            -->
+            <div class="ic-lbl">Incremental Margin $ <span class="tip"
+              data-tip="= (Wtd GM%_B − Wtd GM%_A) × Revenue_A
+
+Answers: 'if the Grid A customer base moved to Grid B
+pricing, how much additional margin would we earn?'">?</span></div>
+            <div class="ic-val" id="incrDeltaDollar">—</div>
+          </div>
+        </div>
+
+        <!-- Live formula display -->
+        <div class="formula-box" id="incrFormula">Select two grids above to see the live calculation.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── DETAIL TABLE ──────────────────────────────────────────── -->
+  <div class="panel">
+    <div class="ph">
+      <div class="ph-title">
+        SKU Detail
+        <span class="tip"
+          data-tip="Full record list. Click a column header to sort.
+GM% = (MSRP − Cost) / MSRP per individual SKU.
+The Weighted GM% in the KPIs aggregates these rows
+using revenue as the weight.">?</span>
+      </div>
+      <span class="ph-sub" id="detailCount">—</span>
+    </div>
+    <div class="dtbl-scroll">
+      <table class="dtbl" id="detailTable">
+        <thead>
+          <tr>
+            <th data-col="product_line">Product <span class="sort-ic">▲</span></th>
+            <th data-col="grid">Grid <span class="sort-ic">▲</span></th>
+            <th data-col="size">Size <span class="sort-ic">▲</span></th>
+            <th data-col="volume">Volume <span class="sort-ic">▲</span></th>
+            <th data-col="msrp">MSRP/unit <span class="sort-ic">▲</span></th>
+            <th data-col="cost">Cost/unit <span class="sort-ic">▲</span></th>
+            <th data-col="gm_pct">GM% <span class="sort-ic">▲</span></th>
+            <th data-col="revenue">Revenue <span class="sort-ic">▲</span></th>
+            <th data-col="margin_dollar">Margin $ <span class="sort-ic">▲</span></th>
+          </tr>
+        </thead>
+        <tbody id="detailBody"></tbody>
+        <tfoot id="detailFoot"></tfoot>
+      </table>
+    </div>
+  </div>
+
+</div><!-- .page -->
+
+<footer class="footer">
+  <span>Hunter Douglas Motorized Shades — Margin &amp; Volume Dashboard</span>
+  <span id="footerNote">Weighted averages use revenue (MSRP × Volume) as the weight across all sizes.</span>
+</footer>
+
+
+<!-- ════════════════════════════════════════════════════════════════
+     JAVASCRIPT
+     Structure:
+       1. DATA MODULE   — sample data + file loading + normalization
+       2. CALC MODULE   — weighted margin, grid stats, incremental
+       3. RENDER MODULE — KPIs, grid table, incremental UI, detail table
+       4. MAIN          — filters, sort state, wiring
+═════════════════════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+/* ══════════════════════════════════════════════════════════════════════
+   1. DATA MODULE
+   ══════════════════════════════════════════════════════════════════════
+   SAMPLE_DATA is a realistic stand-in for two product lines (Duette and
+   Rollers) across four pricing grids (LF1–LF4).  Replace it — or load a
+   file via the button — without changing anything else.
+
+   Expected column schema (flexible aliases accepted by normalizeRecords):
+     product_line  — "Duette" | "Rollers" | any string
+     grid          — "LF1" | "LF2" | "LF3" | "LF4" | any string
+     size          — e.g. '24"×36"'   (used only as a label, not a filter)
+     volume        — integer units sold
+     msrp          — selling price per unit ($)
+     cost          — unit cost ($)
+*/
+
+// Gross margins are intentionally tiered:
+//   LF1 ≈ 25%,  LF2 ≈ 32%,  LF3 ≈ 40%,  LF4 ≈ 48%
+// This lets the Incremental Calculator show meaningful deltas.
+
+const SAMPLE_DATA = [
+  // ── Duette — LF1 ────────────────────────────────────────────────────────
+  { product_line:"Duette",  grid:"LF1", size:'24"×36"', volume:142, msrp: 285, cost:213.75 },
+  { product_line:"Duette",  grid:"LF1", size:'30"×48"', volume:198, msrp: 385, cost:288.75 },
+  { product_line:"Duette",  grid:"LF1", size:'36"×60"', volume:165, msrp: 485, cost:363.75 },
+  { product_line:"Duette",  grid:"LF1", size:'48"×72"', volume: 87, msrp: 625, cost:468.75 },
+  { product_line:"Duette",  grid:"LF1", size:'60"×84"', volume: 54, msrp: 795, cost:596.25 },
+  // ── Duette — LF2 ────────────────────────────────────────────────────────
+  { product_line:"Duette",  grid:"LF2", size:'24"×36"', volume:112, msrp: 325, cost:221.00 },
+  { product_line:"Duette",  grid:"LF2", size:'30"×48"', volume:156, msrp: 435, cost:295.80 },
+  { product_line:"Duette",  grid:"LF2", size:'36"×60"', volume:133, msrp: 550, cost:374.00 },
+  { product_line:"Duette",  grid:"LF2", size:'48"×72"', volume: 72, msrp: 710, cost:482.80 },
+  { product_line:"Duette",  grid:"LF2", size:'60"×84"', volume: 43, msrp: 895, cost:608.60 },
+  // ── Duette — LF3 ────────────────────────────────────────────────────────
+  { product_line:"Duette",  grid:"LF3", size:'24"×36"', volume: 78, msrp: 385, cost:231.00 },
+  { product_line:"Duette",  grid:"LF3", size:'30"×48"', volume:105, msrp: 515, cost:309.00 },
+  { product_line:"Duette",  grid:"LF3", size:'36"×60"', volume: 88, msrp: 649, cost:389.40 },
+  { product_line:"Duette",  grid:"LF3", size:'48"×72"', volume: 49, msrp: 835, cost:501.00 },
+  { product_line:"Duette",  grid:"LF3", size:'60"×84"', volume: 29, msrp:1055, cost:633.00 },
+  // ── Duette — LF4 ────────────────────────────────────────────────────────
+  { product_line:"Duette",  grid:"LF4", size:'24"×36"', volume: 45, msrp: 465, cost:241.80 },
+  { product_line:"Duette",  grid:"LF4", size:'30"×48"', volume: 67, msrp: 625, cost:325.00 },
+  { product_line:"Duette",  grid:"LF4", size:'36"×60"', volume: 52, msrp: 785, cost:408.20 },
+  { product_line:"Duette",  grid:"LF4", size:'48"×72"', volume: 28, msrp:1010, cost:525.20 },
+  { product_line:"Duette",  grid:"LF4", size:'60"×84"', volume: 15, msrp:1275, cost:663.00 },
+  // ── Rollers — LF1 ───────────────────────────────────────────────────────
+  { product_line:"Rollers", grid:"LF1", size:'24"×36"', volume:218, msrp: 185, cost:138.75 },
+  { product_line:"Rollers", grid:"LF1", size:'30"×48"', volume:284, msrp: 255, cost:191.25 },
+  { product_line:"Rollers", grid:"LF1", size:'36"×60"', volume:241, msrp: 325, cost:243.75 },
+  { product_line:"Rollers", grid:"LF1", size:'48"×72"', volume:132, msrp: 420, cost:315.00 },
+  { product_line:"Rollers", grid:"LF1", size:'60"×84"', volume: 76, msrp: 530, cost:397.50 },
+  // ── Rollers — LF2 ───────────────────────────────────────────────────────
+  { product_line:"Rollers", grid:"LF2", size:'24"×36"', volume:175, msrp: 215, cost:144.05 },
+  { product_line:"Rollers", grid:"LF2", size:'30"×48"', volume:225, msrp: 295, cost:197.65 },
+  { product_line:"Rollers", grid:"LF2", size:'36"×60"', volume:190, msrp: 375, cost:251.25 },
+  { product_line:"Rollers", grid:"LF2", size:'48"×72"', volume:103, msrp: 485, cost:324.95 },
+  { product_line:"Rollers", grid:"LF2", size:'60"×84"', volume: 58, msrp: 615, cost:412.05 },
+  // ── Rollers — LF3 ───────────────────────────────────────────────────────
+  { product_line:"Rollers", grid:"LF3", size:'24"×36"', volume:122, msrp: 255, cost:153.00 },
+  { product_line:"Rollers", grid:"LF3", size:'30"×48"', volume:158, msrp: 350, cost:210.00 },
+  { product_line:"Rollers", grid:"LF3", size:'36"×60"', volume:134, msrp: 445, cost:267.00 },
+  { product_line:"Rollers", grid:"LF3", size:'48"×72"', volume: 73, msrp: 575, cost:345.00 },
+  { product_line:"Rollers", grid:"LF3", size:'60"×84"', volume: 40, msrp: 725, cost:435.00 },
+  // ── Rollers — LF4 ───────────────────────────────────────────────────────
+  { product_line:"Rollers", grid:"LF4", size:'24"×36"', volume: 72, msrp: 305, cost:167.75 },
+  { product_line:"Rollers", grid:"LF4", size:'30"×48"', volume: 95, msrp: 420, cost:231.00 },
+  { product_line:"Rollers", grid:"LF4", size:'36"×60"', volume: 80, msrp: 535, cost:294.25 },
+  { product_line:"Rollers", grid:"LF4", size:'48"×72"', volume: 44, msrp: 690, cost:379.50 },
+  { product_line:"Rollers", grid:"LF4", size:'60"×84"', volume: 23, msrp: 875, cost:481.25 },
+];
+
+// Active dataset (swapped when user loads a file)
+let activeData = SAMPLE_DATA;
+
+// ── Column-name aliases so real files don't need exact column names ──────────
+const COL_ALIASES = {
+  product_line: ['product_line','product','productline','product line','line','product line'],
+  grid:         ['grid','pricing_grid','pricinggrid','tier','level'],
+  size:         ['size','dimension','dimensions','size_label'],
+  volume:       ['volume','qty','quantity','units','vol','unit_sales','sales_units'],
+  msrp:         ['msrp','list_price','listprice','list price','price','selling_price','sell_price'],
+  cost:         ['cost','unit_cost','unitcost','cogs','cost_per_unit'],
+};
+
+/**
+ * Coerces any loaded row array into the standard schema.
+ * Accepts column names case-insensitively and trims whitespace.
+ */
+function normalizeRecords(rows) {
+  return rows
+    .map(row => {
+      const out = {};
+      for (const [key, aliases] of Object.entries(COL_ALIASES)) {
+        const match = Object.keys(row).find(k =>
+          aliases.includes(k.toLowerCase().trim().replace(/\s+/g, ' '))
+        );
+        out[key] = match !== undefined ? row[match] : (key === 'product_line' || key === 'grid' || key === 'size' ? '' : 0);
+      }
+      out.volume = Number(out.volume) || 0;
+      out.msrp   = Number(out.msrp)   || 0;
+      out.cost   = Number(out.cost)   || 0;
+      return out;
+    })
+    .filter(r => r.volume > 0 && r.msrp > 0);   // drop zero/invalid rows
+}
+
+// ── File-input handler (JSON and Excel) ─────────────────────────────────────
+document.getElementById('fileInput').addEventListener('change', function (e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const isExcel = /\.(xlsx|xls)$/i.test(file.name);
+  const reader  = new FileReader();
+
+  reader.onload = function (ev) {
+    try {
+      let rows;
+      if (isExcel) {
+        // Parse Excel with SheetJS — reads the first worksheet
+        const wb = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        rows = XLSX.utils.sheet_to_json(ws, { defval: 0 });
+      } else {
+        // Parse JSON: accept either flat array or { records/data: [...] }
+        const parsed = JSON.parse(ev.target.result);
+        rows = Array.isArray(parsed) ? parsed : (parsed.records || parsed.data || []);
+      }
+
+      activeData = normalizeRecords(rows);
+      if (activeData.length === 0) {
+        alert('No valid records found. Check that the file has the required columns:\nproduct_line, grid, size, volume, msrp, cost');
+        return;
+      }
+
+      document.getElementById('noticeBanner').classList.add('hidden');
+      document.getElementById('dataSource').textContent =
+        `${file.name} — ${activeData.length} records loaded`;
+
+      rebuildFilters();
+      update();
+    } catch (err) {
+      alert('Error loading file:\n' + err.message);
+    }
+  };
+
+  if (isExcel) reader.readAsArrayBuffer(file);
+  else         reader.readAsText(file);
+  e.target.value = '';   // allow re-uploading the same file
+});
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   2. CALC MODULE
+   ══════════════════════════════════════════════════════════════════════ */
+
+/**
+ * filterRecords — applies product-line and grid dropdowns.
+ * "all" means no filter on that dimension.
+ */
+function filterRecords(data, productLine, grid) {
+  return data.filter(r =>
+    (productLine === 'all' || r.product_line === productLine) &&
+    (grid        === 'all' || r.grid         === grid)
+  );
+}
+
+/**
+ * calcStats — total-level aggregates for a record array.
+ *
+ * Weighted Average Gross Margin (revenue-weighted):
+ *   wt_gm = Σ[(MSRP − Cost) × Volume]  /  Σ[MSRP × Volume]
+ *         = totalMarginDollar / totalRevenue
+ *
+ * Why revenue-weighted?  Weighting by revenue correctly reflects that a
+ * $1 000 shade has more financial impact than a $200 shade at the same
+ * unit count.  This is equivalent to the "blended" GM% seen in P&L reports.
+ */
+function calcStats(records) {
+  let totalVolume      = 0;
+  let totalRevenue     = 0;
+  let totalMarginDollar = 0;
+
+  for (const r of records) {
+    const rev    = r.msrp * r.volume;
+    const margin = (r.msrp - r.cost) * r.volume;
+    totalVolume       += r.volume;
+    totalRevenue      += rev;
+    totalMarginDollar += margin;
+  }
+
+  const wtGmPct = totalRevenue > 0 ? totalMarginDollar / totalRevenue : null;
+
+  return { totalVolume, totalRevenue, totalMarginDollar, wtGmPct, count: records.length };
+}
+
+/**
+ * calcGridStats — same aggregation, grouped by grid.
+ * Returns an array sorted by grid name, with a totals row appended.
+ */
+function calcGridStats(records) {
+  const map = new Map();
+
+  for (const r of records) {
+    if (!map.has(r.grid)) map.set(r.grid, []);
+    map.get(r.grid).push(r);
+  }
+
+  const rows = [];
+  for (const [grid, recs] of map.entries()) {
+    const s = calcStats(recs);
+    rows.push({ grid, ...s });
+  }
+
+  // Sort: grids that look like LF1, LF2 … sort numerically; others alphabetically
+  rows.sort((a, b) => a.grid.localeCompare(b.grid, undefined, { numeric: true, sensitivity: 'base' }));
+
+  // Totals row
+  const totals = calcStats(records);
+  rows.push({ grid: 'TOTAL', ...totals, isTotal: true });
+
+  return rows;
+}
+
+/**
+ * calcIncrementalMargin — how much additional margin do we capture if
+ * Grid A customers were priced at Grid B margin rates?
+ *
+ *   Δ$ = (wtGmPct_B − wtGmPct_A) × Revenue_A
+ *
+ * Positive = Grid B is more profitable for the same revenue base.
+ * Works for any pair of grids (not just adjacent ones).
+ */
+function calcIncrementalMargin(statsA, statsB) {
+  if (!statsA || !statsB) return null;
+  if (statsA.wtGmPct === null || statsB.wtGmPct === null) return null;
+  const deltaPct   = statsB.wtGmPct - statsA.wtGmPct;   // e.g. 0.40 − 0.25 = 0.15
+  const deltaTotal = deltaPct * statsA.totalRevenue;      // $ uplift
+  return { deltaPct, deltaTotal, revenueA: statsA.totalRevenue };
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   3. RENDER MODULE
+   ══════════════════════════════════════════════════════════════════════ */
+
+// Formatters
+const fmtMoney = v => new Intl.NumberFormat('en-US', { style:'currency', currency:'USD', minimumFractionDigits:0, maximumFractionDigits:0 }).format(v ?? 0);
+const fmtMoneyD = v => new Intl.NumberFormat('en-US', { style:'currency', currency:'USD', minimumFractionDigits:2, maximumFractionDigits:2 }).format(v ?? 0);
+const fmtPct   = v => v === null || !isFinite(v) ? '—' : `${(v * 100).toFixed(1)}%`;
+const fmtNum   = v => new Intl.NumberFormat('en-US').format(Math.round(v ?? 0));
+const sign     = v => v > 0 ? '+' : '';
+
+/** Returns a CSS class name for a grid label (LF1→4 or unknown). */
+function gridClass(g) {
+  const n = g.toUpperCase();
+  if (n === 'LF1') return 'g-lf1';
+  if (n === 'LF2') return 'g-lf2';
+  if (n === 'LF3') return 'g-lf3';
+  if (n === 'LF4') return 'g-lf4';
+  if (n === 'TOTAL') return 'g-total';
+  return 'g-other';
+}
+
+// ── renderKPIs ───────────────────────────────────────────────────────────────
+function renderKPIs(stats) {
+  document.getElementById('kpiVolume').textContent      = fmtNum(stats.totalVolume);
+  document.getElementById('kpiVolumeNote').textContent  = `${stats.count} SKU records`;
+  document.getElementById('kpiWtGM').textContent        = fmtPct(stats.wtGmPct);
+  document.getElementById('kpiRevenue').textContent     = fmtMoney(stats.totalRevenue);
+  document.getElementById('kpiMarginDollar').textContent = fmtMoney(stats.totalMarginDollar);
+  document.getElementById('kpiMarginNote').textContent  = `${fmtPct(stats.wtGmPct)} of revenue`;
+}
+
+// ── renderGridTable ──────────────────────────────────────────────────────────
+function renderGridTable(gridRows) {
+  const dataRows  = gridRows.filter(r => !r.isTotal);
+  const totalRow  = gridRows.find(r => r.isTotal);
+  const maxMargin = Math.max(...dataRows.map(r => r.wtGmPct ?? 0), 0.01);
+
+  document.getElementById('gridPanelSub').textContent =
+    `${dataRows.length} grid${dataRows.length !== 1 ? 's' : ''}`;
+
+  const tbody = document.getElementById('gridTableBody');
+
+  const rowHtml = (r, isTotal) => {
+    const cls   = isTotal ? 'g-total' : gridClass(r.grid);
+    const barW  = isTotal ? 0 : Math.round(((r.wtGmPct ?? 0) / maxMargin) * 100);
+    const label = isTotal ? 'TOTAL' : r.grid;
+
+    return `<tr data-grid="${r.grid}">
+      <td><span class="gbadge ${cls}">${label}</span></td>
+      <td>${fmtNum(r.totalVolume)}</td>
+      <td>${fmtMoney(r.totalRevenue)}</td>
+      <td>${fmtPct(r.wtGmPct)}</td>
+      <td>${fmtMoney(r.totalMarginDollar)}</td>
+      <td>
+        ${isTotal ? '' : `
+        <div class="mbar">
+          <span>${fmtPct(r.wtGmPct)}</span>
+          <div class="mbar-track"><div class="mbar-fill" style="width:${barW}%"></div></div>
+        </div>`}
+      </td>
+    </tr>`;
+  };
+
+  tbody.innerHTML =
+    dataRows.map(r => rowHtml(r, false)).join('') +
+    (totalRow ? rowHtml(totalRow, true) : '');
+
+  // Row click → pre-select Grid A in incremental calculator
+  tbody.querySelectorAll('tr[data-grid]').forEach(tr => {
+    tr.addEventListener('click', () => {
+      const g = tr.dataset.grid;
+      if (g && g !== 'TOTAL') {
+        const selA = document.getElementById('incrA');
+        if ([...selA.options].some(o => o.value === g)) {
+          selA.value = g;
+          updateIncrementalCalc();
+        }
+      }
+    });
+  });
+}
+
+// ── renderIncrementalCalc ────────────────────────────────────────────────────
+function renderIncrementalCalc(gridStatsMap) {
+  const gridA = document.getElementById('incrA').value;
+  const gridB = document.getElementById('incrB').value;
+
+  const statsA = gridStatsMap.get(gridA);
+  const statsB = gridStatsMap.get(gridB);
+
+  // Grid A values
+  document.getElementById('incrGmA').textContent =
+    statsA ? fmtPct(statsA.wtGmPct) : '—';
+  document.getElementById('incrGmA').className = 'ic-val neu';
+
+  // Grid B values
+  document.getElementById('incrGmB').textContent =
+    statsB ? fmtPct(statsB.wtGmPct) : '—';
+  document.getElementById('incrGmB').className = 'ic-val neu';
+
+  const result = calcIncrementalMargin(statsA, statsB);
+
+  if (!result) {
+    document.getElementById('incrDeltaPct').textContent    = '—';
+    document.getElementById('incrDeltaDollar').textContent = '—';
+    document.getElementById('incrDeltaPct').className    = 'ic-val neu';
+    document.getElementById('incrDeltaDollar').className = 'ic-val neu';
+    document.getElementById('incrFormula').innerHTML = 'Select two different grids to see the live calculation.';
+    return;
+  }
+
+  const pos = result.deltaPct >= 0;
+  const valCls = pos ? 'pos' : 'neg';
+
+  document.getElementById('incrDeltaPct').textContent    = `${sign(result.deltaPct)}${fmtPct(result.deltaPct)}`;
+  document.getElementById('incrDeltaDollar').textContent = `${sign(result.deltaTotal)}${fmtMoney(result.deltaTotal)}`;
+  document.getElementById('incrDeltaPct').className    = `ic-val ${valCls}`;
+  document.getElementById('incrDeltaDollar').className = `ic-val ${valCls}`;
+
+  // Human-readable formula breakdown
+  const gmAStr  = fmtPct(statsA.wtGmPct);
+  const gmBStr  = fmtPct(statsB.wtGmPct);
+  const dPctStr = `${sign(result.deltaPct)}${fmtPct(result.deltaPct)}`;
+  const revAStr = fmtMoney(result.revenueA);
+  const incrStr = `${sign(result.deltaTotal)}${fmtMoney(result.deltaTotal)}`;
+
+  document.getElementById('incrFormula').innerHTML =
+    `<strong>Δ Margin $  =  (Wtd GM%_B − Wtd GM%_A) × Revenue_A</strong>
+             =  (${gmBStr} − ${gmAStr}) × ${revAStr}
+             =  ${dPctStr} × ${revAStr}
+             =  <strong style="color:var(--${pos ? 'green' : 'red'})">${incrStr}</strong>
+
+${pos
+  ? `Moving ${fmtNum(statsA.totalVolume)} units from ${gridA} → ${gridB} pricing would generate ${incrStr} in additional gross margin.`
+  : `${gridB} has lower margins than ${gridA}. Moving customers would reduce margin by ${fmtMoney(Math.abs(result.deltaTotal))}.`
+}`;
+}
+
+// ── renderDetailTable ────────────────────────────────────────────────────────
+let _sortCol = 'grid';
+let _sortDir = 1;   // 1 = asc, -1 = desc
+
+function renderDetailTable(records) {
+  // Enrich each record with derived fields for sorting / display
+  const enriched = records.map(r => ({
+    ...r,
+    gm_pct:       r.msrp > 0 ? (r.msrp - r.cost) / r.msrp : 0,
+    revenue:      r.msrp * r.volume,
+    margin_dollar:(r.msrp - r.cost) * r.volume,
+  }));
+
+  // Sort
+  enriched.sort((a, b) => {
+    const av = a[_sortCol], bv = b[_sortCol];
+    if (typeof av === 'string') return _sortDir * av.localeCompare(bv, undefined, { numeric: true });
+    return _sortDir * (av - bv);
+  });
+
+  // Update sort indicators
+  document.querySelectorAll('.dtbl th').forEach(th => {
+    th.classList.remove('sort-asc', 'sort-desc');
+    if (th.dataset.col === _sortCol)
+      th.classList.add(_sortDir === 1 ? 'sort-asc' : 'sort-desc');
+    const ic = th.querySelector('.sort-ic');
+    if (ic) ic.textContent = (th.dataset.col === _sortCol ? (_sortDir === 1 ? '▲' : '▼') : '▲');
+  });
+
+  const maxVol = Math.max(...enriched.map(r => r.volume), 1);
+  document.getElementById('detailCount').textContent =
+    `${enriched.length} record${enriched.length !== 1 ? 's' : ''}`;
+
+  const tagCls = pl => /roller/i.test(pl) ? 'tag-r' : 'tag-d';
+
+  document.getElementById('detailBody').innerHTML = enriched.map(r => {
+    const volBarW = Math.round((r.volume / maxVol) * 100);
+    return `<tr>
+      <td><span class="tag ${tagCls(r.product_line)}">${r.product_line}</span></td>
+      <td><span class="gbadge ${gridClass(r.grid)}">${r.grid}</span></td>
+      <td>${r.size}</td>
+      <td>
+        <div class="vbar">
+          <span>${fmtNum(r.volume)}</span>
+          <div class="vbt"><div class="vbf" style="width:${volBarW}%"></div></div>
+        </div>
+      </td>
+      <td>${fmtMoneyD(r.msrp)}</td>
+      <td>${fmtMoneyD(r.cost)}</td>
+      <td>${fmtPct(r.gm_pct)}</td>
+      <td>${fmtMoney(r.revenue)}</td>
+      <td>${fmtMoney(r.margin_dollar)}</td>
+    </tr>`;
+  }).join('');
+
+  // Totals footer
+  const totals = calcStats(records);
+  const enrichTot = { ...totals, gm_pct: totals.wtGmPct, revenue: totals.totalRevenue, margin_dollar: totals.totalMarginDollar };
+  document.getElementById('detailFoot').innerHTML = `<tr>
+    <td colspan="3">TOTAL</td>
+    <td>${fmtNum(totals.totalVolume)}</td>
+    <td></td><td></td>
+    <td>${fmtPct(enrichTot.gm_pct)}</td>
+    <td>${fmtMoney(enrichTot.revenue)}</td>
+    <td>${fmtMoney(enrichTot.margin_dollar)}</td>
+  </tr>`;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════
+   4. MAIN — filters, sort, wiring
+   ══════════════════════════════════════════════════════════════════════ */
+
+/** Rebuilds the product-line and grid filter dropdowns from activeData. */
+function rebuildFilters() {
+  const products = [...new Set(activeData.map(r => r.product_line))].sort();
+  const grids    = [...new Set(activeData.map(r => r.grid))].sort(
+    (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+  );
+
+  const selProduct = document.getElementById('filterProduct');
+  const selGrid    = document.getElementById('filterGrid');
+
+  selProduct.innerHTML = '<option value="all">All Lines</option>' +
+    products.map(p => `<option value="${p}">${p}</option>`).join('');
+
+  selGrid.innerHTML = '<option value="all">All Grids</option>' +
+    grids.map(g => `<option value="${g}">${g}</option>`).join('');
+
+  // Rebuild incremental selects
+  const incrA = document.getElementById('incrA');
+  const incrB = document.getElementById('incrB');
+  const gridOptions = grids.map(g => `<option value="${g}">${g}</option>`).join('');
+  incrA.innerHTML = '<option value="">— select —</option>' + gridOptions;
+  incrB.innerHTML = '<option value="">— select —</option>' + gridOptions;
+
+  // Default: first two grids
+  if (grids.length >= 1) incrA.value = grids[0];
+  if (grids.length >= 2) incrB.value = grids[1];
+}
+
+/** Runs incremental calculator update only (cheap; no full re-render). */
+function updateIncrementalCalc() {
+  const productLine = document.getElementById('filterProduct').value;
+  const gridFilter  = document.getElementById('filterGrid').value;
+  const filtered    = filterRecords(activeData, productLine, 'all');  // grid filter doesn't apply to incremental
+
+  const allGridStats = calcGridStats(filtered).filter(r => !r.isTotal);
+  const statsMap = new Map(allGridStats.map(r => [r.grid, r]));
+
+  renderIncrementalCalc(statsMap);
+}
+
+/** Full update: reads filters, recalculates everything, re-renders all panels. */
+function update() {
+  const productLine = document.getElementById('filterProduct').value;
+  const gridFilter  = document.getElementById('filterGrid').value;
+
+  const filtered   = filterRecords(activeData, productLine, gridFilter);
+  const stats      = calcStats(filtered);
+  const gridStats  = calcGridStats(filtered);
+
+  renderKPIs(stats);
+  renderGridTable(gridStats);
+
+  // For the incremental calculator, always use the full (un-grid-filtered) data
+  // so any grid pair can be compared regardless of the grid dropdown.
+  const unGridFiltered = filterRecords(activeData, productLine, 'all');
+  const allGridStats   = calcGridStats(unGridFiltered).filter(r => !r.isTotal);
+  const statsMap       = new Map(allGridStats.map(r => [r.grid, r]));
+  renderIncrementalCalc(statsMap);
+
+  renderDetailTable(filtered);
+}
+
+// ── Event listeners ──────────────────────────────────────────────────────────
+
+document.getElementById('filterProduct').addEventListener('change', update);
+document.getElementById('filterGrid').addEventListener('change', update);
+
+document.getElementById('incrA').addEventListener('change', updateIncrementalCalc);
+document.getElementById('incrB').addEventListener('change', updateIncrementalCalc);
+
+// Sortable detail-table headers
+document.getElementById('detailTable').querySelector('thead').addEventListener('click', e => {
+  const th = e.target.closest('th[data-col]');
+  if (!th) return;
+  if (_sortCol === th.dataset.col) {
+    _sortDir *= -1;
+  } else {
+    _sortCol = th.dataset.col;
+    _sortDir = 1;
+  }
+  update();
+});
+
+// ── Initialise ───────────────────────────────────────────────────────────────
+rebuildFilters();
+update();
+</script>
+</body>
+</html>
