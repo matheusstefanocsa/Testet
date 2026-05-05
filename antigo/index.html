@@ -7,44 +7,18 @@
   <!-- ADDED: SheetJS for Excel (.xlsx/.xls) import support -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-    @font-face {
-      font-family: 'Mosk';
-      font-weight: 300;
-      src: url('../../Price-Guides-Duette/fonts/Mosk Light 300.ttf') format('truetype');
-    }
-    @font-face {
-      font-family: 'Mosk';
-      font-weight: 400;
-      src: url('../../Price-Guides-Duette/fonts/Mosk Normal 400.ttf') format('truetype');
-    }
-    @font-face {
-      font-family: 'Mosk';
-      font-weight: 500;
-      src: url('../../Price-Guides-Duette/fonts/Mosk Medium 500.ttf') format('truetype');
-    }
-    @font-face {
-      font-family: 'Mosk';
-      font-weight: 600;
-      src: url('../../Price-Guides-Duette/fonts/Mosk Semi-Bold 600.ttf') format('truetype');
-    }
-    @font-face {
-      font-family: 'Mosk';
-      font-weight: 700;
-      src: url('../../Price-Guides-Duette/fonts/Mosk Bold 700.ttf') format('truetype');
-    }
-
     :root {
-      --bg: #ffffff;
+      --bg: #f3f5f7;
       --panel: #ffffff;
-      --ink: #232323;
-      --muted: #999999;
-      --line: #E5E5E5;
-      --accent: #44DC98;
-      --accent-2: #0d6b47;
-      --warn: #F59E0B;
-      --soft: #e8faf3;
+      --ink: #18202a;
+      --muted: #657080;
+      --line: #d9dee6;
+      --accent: #0f766e;
+      --accent-2: #92400e;
+      --warn: #b45309;
+      --soft: #e9f4f2;
       --shade: #d8c9ad;
-      --shadow: 0 2px 12px rgba(35, 35, 35, 0.08);
+      --shadow: 0 18px 40px rgba(24, 32, 42, 0.10);
     }
 
     * { box-sizing: border-box; }
@@ -54,8 +28,7 @@
       min-height: 100vh;
       background: var(--bg);
       color: var(--ink);
-      font-family: 'Mosk', Arial, Helvetica, sans-serif;
-      font-weight: 400;
+      font-family: Arial, Helvetica, sans-serif;
     }
 
     .app {
@@ -65,7 +38,7 @@
     }
 
     aside {
-      background: #fafafa;
+      background: #fbfcfd;
       border-right: 1px solid var(--line);
       padding: 28px;
     }
@@ -76,16 +49,12 @@
       margin: 0 0 8px;
       font-size: 26px;
       line-height: 1.15;
-      font-weight: 700;
-      color: #000000;
     }
 
     .subtitle {
       margin: 0 0 24px;
       color: var(--muted);
       font-size: 14px;
-      font-style: italic;
-      font-weight: 300;
       line-height: 1.45;
     }
 
@@ -95,8 +64,8 @@
       display: grid;
       gap: 7px;
       font-size: 13px;
-      font-weight: 600;
-      color: #232323;
+      font-weight: 700;
+      color: #26312d;
     }
 
     input, select {
@@ -156,9 +125,9 @@
 
     .notice {
       margin-top: 18px;
-      border: 1px solid rgba(245, 158, 11, 0.30);
-      background: rgba(245, 158, 11, 0.08);
-      color: #92400e;
+      border: 1px solid rgba(180, 83, 9, 0.25);
+      background: #fff7ed;
+      color: #7c2d12;
       border-radius: 6px;
       padding: 12px;
       font-size: 13px;
@@ -183,15 +152,13 @@
       color: var(--ink);
       padding: 9px 13px;
       cursor: pointer;
-      font-weight: 600;
-      font-family: 'Mosk', Arial, Helvetica, sans-serif;
-      font-size: 13px;
+      font-weight: 700;
     }
 
     button.primary {
       border-color: var(--accent);
       background: var(--accent);
-      color: #000000;
+      color: white;
     }
 
     /* ── KPI summary row — 6 cards (MODIFIED: was 5, added Weighted Gross Margin) ── */
@@ -295,7 +262,7 @@
       border: 1px solid var(--line);
       border-radius: 8px;
       padding: 12px;
-      background: #fafafa;
+      background: #fbfcfd;
     }
 
     .spec span {
@@ -325,10 +292,10 @@
 
     /* Accent top border on KPI cards */
     .metric { border-top: 3px solid var(--accent); }
-    .metric.m-warn  { border-top-color: #F59E0B; }
-    .metric.m-pos   { border-top-color: #44DC98; }
-    .metric.m-incr  { border-top-color: #8B5CF6; }
-    .metric.m-wtd   { border-top-color: #2563EB; }
+    .metric.m-warn  { border-top-color: var(--warn); }
+    .metric.m-pos   { border-top-color: #15803d; }
+    .metric.m-incr  { border-top-color: #6d28d9; }
+    .metric.m-wtd   { border-top-color: #0369a1; } /* ADDED: Weighted Gross Margin — blue */
 
     /* ADDED ── Data Import sidebar section ── */
     .import-status {
@@ -336,12 +303,12 @@
       padding: 8px 10px;
       border-radius: 6px;
       font-size: 12px;
-      font-weight: 600;
-      background: #f5f5f5;
+      font-weight: 700;
+      background: #f1f5f9;
       color: var(--muted);
       border: 1px dashed var(--line);
     }
-    .import-status.ok { background: #e8faf3; color: #0d6b47; border-color: #44DC98; }
+    .import-status.ok { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
     .import-status.err { background: #fff1f2; color: #9f1239; border-color: #fecdd3; }
 
     /* ADDED ── Incremental Margin Matrix ── */
@@ -355,23 +322,20 @@
     .im-table th:first-child { text-align: left; }
     .im-table td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: center; white-space: nowrap; }
     .im-table td:first-child { text-align: left; font-weight: 700; }
-    .im-table .im-diag { background: #f5f5f5; color: var(--muted); font-weight: 400; }
+    .im-table .im-diag { background: #f8fafc; color: var(--muted); font-weight: 400; }
     .im-table tr:last-child td { border-bottom: 0; }
     .im-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: var(--muted); }
 
     .metric span {
       color: var(--muted);
-      font-size: 11px; font-weight: 600;
+      font-size: 12px; font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.4px;
       display: flex; align-items: center; gap: 5px;
     }
 
     .metric strong {
       font-size: clamp(22px, 2.5vw, 34px);
       line-height: 1.05;
-      font-weight: 700;
-      color: #000000;
     }
 
     .metric small { color: var(--muted); font-size: 12px; }
@@ -395,7 +359,7 @@
       bottom: calc(100% + 8px);
       left: 50%;
       transform: translateX(-50%);
-      background: #232323;
+      background: #1f2937;
       color: #fff;
       padding: 8px 12px;
       border-radius: 5px;
@@ -424,7 +388,7 @@
       margin-bottom: 14px;
     }
 
-    h2 { margin: 0; font-size: 18px; font-weight: 700; color: #000000; }
+    h2 { margin: 0; font-size: 18px; }
 
     .pill {
       display: inline-flex;
@@ -458,7 +422,7 @@
     .bar-track {
       height: 12px;
       border-radius: 999px;
-      background: #E5E5E5;
+      background: #edf0eb;
       overflow: hidden;
     }
 
@@ -493,15 +457,15 @@
     tr:last-child td {
       border-bottom: 0;
       font-weight: 700;
-      background: #f5f5f5;
+      background: #fafbf8;
     }
 
     .error {
       display: none;
       margin-bottom: 18px;
-      border: 1px solid rgba(220, 38, 38, 0.35);
-      background: #fff1f2;
-      color: #9f1239;
+      border: 1px solid rgba(180, 83, 9, 0.35);
+      background: #fffbeb;
+      color: #78350f;
       border-radius: 8px;
       padding: 14px;
       font-size: 14px;
@@ -515,11 +479,11 @@
     .gc-table td:not(:first-child) { text-align: right; }
 
     /* Delta colours */
-    .delta-pos { color: #0d6b47; font-weight: 700; }
-    .delta-neg { color: #DC2626; font-weight: 700; }
+    .delta-pos { color: #15803d; font-weight: 700; }
+    .delta-neg { color: #b91c1c; font-weight: 700; }
 
     /* Selected (current) grid row */
-    .row-selected td { background: #e8faf3 !important; font-weight: 700; }
+    .row-selected td { background: #f0fdf4 !important; font-weight: 700; }
     .sel-badge {
       display: inline-flex;
       padding: 1px 7px;
@@ -533,7 +497,7 @@
 
     /* Mini MSRP bar inside grid comparison */
     .gc-bar-wrap { display: flex; align-items: center; gap: 7px; justify-content: flex-end; }
-    .gc-bar-track { width: 70px; height: 7px; border-radius: 999px; background: #E5E5E5; overflow: hidden; }
+    .gc-bar-track { width: 70px; height: 7px; border-radius: 999px; background: #edf0eb; overflow: hidden; }
     .gc-bar-fill  { height: 100%; border-radius: 999px; background: var(--accent); }
 
     /* ══════════════════════════════════════════════
@@ -564,7 +528,7 @@
     }
     .wt-vol-input:focus { border-color: var(--accent); outline: none; }
 
-    .wt-result-row td { background: #f5f5f5 !important; font-weight: 700; border-top: 2px solid var(--line) !important; }
+    .wt-result-row td { background: #fafbf8 !important; font-weight: 700; border-top: 2px solid var(--line) !important; }
     .wt-gm-highlight { color: var(--accent); font-size: 16px; }
 
     /* ══════════════════════════════════════════════
@@ -880,7 +844,7 @@ Customize volumes in the Weighted Size Analysis below.">?</span>
           <h2>Equivalent R Call</h2>
           <span class="pill">print_motor_breakdown()</span>
         </div>
-        <pre id="rCall" style="margin:0;overflow:auto;background:#f5f5f5;border:1px solid var(--line);border-radius:6px;padding:14px;font-size:13px;line-height:1.45;font-family:'Mosk',monospace;"></pre>
+        <pre id="rCall" style="margin:0;overflow:auto;background:#f4f6f1;border:1px solid var(--line);border-radius:6px;padding:14px;font-size:13px;line-height:1.45;"></pre>
       </section>
 
       <!-- ═════════════════════════════════════════════════════════════
@@ -965,8 +929,8 @@ Without volume: shows Δ GM% between pairs.">?</span>
           </table>
         </div>
         <div class="im-legend">
-          <span><span style="color:#0d6b47;font-weight:700">▲ Green</span> = gain when moving to the column grid</span>
-          <span><span style="color:#DC2626;font-weight:700">▼ Red</span> = loss when moving to the column grid</span>
+          <span><span style="color:#15803d;font-weight:700">▲ Green</span> = gain when moving to the column grid</span>
+          <span><span style="color:#b91c1c;font-weight:700">▼ Red</span> = loss when moving to the column grid</span>
           <span style="color:var(--muted)">Diagonal = same grid (reference GM%)</span>
         </div>
       </section>
@@ -1934,7 +1898,7 @@ This replaces manually picking a single size.">?</span>
           const incrDollar = cmpMargin - baseMargin;
           const deltaGM    = (cmpTotal.grossMargin ?? 0) - (total.grossMargin ?? 0);
           document.getElementById("incrMarginKpi").textContent    = sign(incrDollar) + money(incrDollar);
-          document.getElementById("incrMarginKpi").style.color    = incrDollar > 0 ? "#0d6b47" : incrDollar < 0 ? "#DC2626" : "inherit";
+          document.getElementById("incrMarginKpi").style.color    = incrDollar > 0 ? "#15803d" : incrDollar < 0 ? "#b91c1c" : "inherit";
           document.getElementById("incrMarginNote").textContent   = `${grid} → ${compareGridVal}  (Δ GM ${sign(deltaGM)}${pct(deltaGM)})`;
         } else if (volume > 0 && compareGridVal === grid) {
           document.getElementById("incrMarginKpi").textContent   = "—";
