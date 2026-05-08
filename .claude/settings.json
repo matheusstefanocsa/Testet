@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.hunterdouglas.com.br)",
+      "Bash(dir \"c:\\\\Users\\\\Matheus Stefano\\\\Desktop\\\\Projeto Motor Hunter Douglas\\\\Testet\" /b /s)",
+      "Bash(findstr /i \"logo\\\\|png\\\\|jpg\\\\|jpeg\\\\|svg\\\\|gif\\\\|webp\\\\|ico\")",
+      "Bash(dir \"c:\\\\Users\\\\Matheus Stefano\\\\Desktop\\\\Projeto Motor Hunter Douglas\\\\Testet\" /b 2>nul)",
+      "Bash(dir \"c:\\\\Users\\\\Matheus Stefano\\\\Desktop\\\\Projeto Motor Hunter Douglas\\\\Testet\" /b /a)",
+      "Bash(dir \"c:\\\\Users\\\\Matheus Stefano\\\\Desktop\\\\Projeto Motor Hunter Douglas\" /b /a)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\Matheus Stefano\\Desktop\\Projeto Motor Hunter Douglas\\Testet"
+    ]
+  }
+}

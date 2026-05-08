@@ -3,9 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Hunter Douglas Motor Calculator</title>
+  <title>Price Cost Calculator</title>
   <!-- ADDED: SheetJS for Excel (.xlsx/.xls) import support -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- Premium typography — DM Sans (clean, architectural, HD-like) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
   <style>
     @font-face {
       font-family: 'Mosk';
@@ -34,17 +38,18 @@
     }
 
     :root {
-      --bg: #ffffff;
-      --panel: #ffffff;
-      --ink: #232323;
-      --muted: #999999;
-      --line: #E5E5E5;
-      --accent: #44DC98;
-      --accent-2: #0d6b47;
-      --warn: #F59E0B;
-      --soft: #e8faf3;
+      /* ── Hunter Douglas official brand palette ── */
+      --bg: #F4F5F7;           /* very light cool-white */
+      --panel: #FFFFFF;
+      --ink: #3C4858;          /* HD slate-grey — same tone as wordmark */
+      --muted: #7A8B9C;        /* medium slate for labels/hints */
+      --line: #DDE2E8;         /* soft grey border */
+      --accent: #E8741C;       /* HD brand orange — the circle symbol */
+      --accent-2: #C25E0F;     /* deeper orange for hover states */
+      --warn: #D4550F;         /* amber-orange for warnings */
+      --soft: #FEF3EB;         /* very light orange tint — hover/selected */
       --shade: #d8c9ad;
-      --shadow: 0 2px 12px rgba(35, 35, 35, 0.08);
+      --shadow: 0 1px 4px rgba(60,72,88,0.07), 0 4px 20px rgba(60,72,88,0.08);
     }
 
     * { box-sizing: border-box; }
@@ -54,66 +59,134 @@
       min-height: 100vh;
       background: var(--bg);
       color: var(--ink);
-      font-family: 'Mosk', Arial, Helvetica, sans-serif;
+      font-family: 'DM Sans', 'Inter', 'Mosk', Arial, Helvetica, sans-serif;
       font-weight: 400;
     }
 
     .app {
       min-height: 100vh;
-      display: grid;
-      grid-template-columns: minmax(320px, 420px) 1fr;
+      display: flex;
     }
 
     aside {
-      background: #fafafa;
+      width: 390px;
+      flex-shrink: 0;
+      background: var(--bg);
       border-right: 1px solid var(--line);
       padding: 28px;
+      overflow: hidden;
+      transition: width 0.28s ease, padding 0.28s ease, border-color 0.28s ease;
     }
 
-    main { padding: 28px; }
+    .app.sidebar-collapsed aside {
+      width: 0;
+      padding: 0;
+      border-right-color: transparent;
+    }
+
+    /* ── Sidebar toggle tab ── */
+    .sidebar-toggle {
+      flex-shrink: 0;
+      width: 10px;
+      background: var(--soft);
+      border: none;
+      border-left: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+      color: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0;
+      padding: 0;
+      transition: background 0.15s;
+      min-height: 100%;
+      align-self: stretch;
+    }
+    .sidebar-toggle:hover {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    main {
+      flex: 1;
+      min-width: 0;
+      padding: 0 32px 32px;
+    }
+
+    .topbar-wrap {
+      padding-top: 28px;
+      padding-bottom: 20px;
+      margin-bottom: 4px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 20px;
+    }
 
     h1 {
       margin: 0 0 8px;
       font-size: 26px;
-      line-height: 1.15;
+      line-height: 1.1;
       font-weight: 700;
-      color: #000000;
+      color: var(--ink);
+      letter-spacing: -0.6px;
+    }
+
+    /* Sidebar H1 — tighter, brand-weight feel */
+    aside h1 {
+      font-size: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      font-weight: 700;
+    }
+
+    /* Main H1 — larger, editorial */
+    main h1 {
+      font-size: 28px;
+      letter-spacing: -0.8px;
     }
 
     .subtitle {
       margin: 0 0 24px;
       color: var(--muted);
-      font-size: 14px;
-      font-style: italic;
-      font-weight: 300;
-      line-height: 1.45;
+      font-size: 13px;
+      font-style: normal;
+      font-weight: 400;
+      line-height: 1.6;
     }
 
     .form-grid { display: grid; gap: 16px; }
 
     label {
       display: grid;
-      gap: 7px;
-      font-size: 13px;
-      font-weight: 600;
-      color: #232323;
+      gap: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
     }
 
     input, select {
       width: 100%;
       min-height: 42px;
       border: 1px solid var(--line);
-      border-radius: 6px;
+      border-radius: 0;
       background: #fff;
       color: var(--ink);
-      padding: 9px 11px;
-      font-size: 15px;
+      padding: 9px 12px;
+      font-size: 14px;
+      font-family: 'DM Sans', 'Inter', 'Mosk', Arial, Helvetica, sans-serif;
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
       outline: none;
+      transition: border-color 0.12s;
     }
 
     input:focus, select:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.16);
+      box-shadow: none;
     }
 
     .row {
@@ -134,19 +207,19 @@
       accent-color: var(--accent);
     }
 
-    .hint { color: var(--muted); font-size: 12px; font-weight: 400; }
+    .hint { color: var(--muted); font-size: 11px; font-weight: 400; text-transform: none; letter-spacing: 0; }
 
     /* ── Section divider inside sidebar ── */
     .sidebar-section {
-      margin-top: 20px;
-      padding-top: 18px;
+      margin-top: 24px;
+      padding-top: 20px;
       border-top: 1px solid var(--line);
     }
     .sidebar-section-title {
-      font-size: 12px;
+      font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: .5px;
+      letter-spacing: 1.5px;
       color: var(--muted);
       margin-bottom: 14px;
       display: flex;
@@ -156,13 +229,13 @@
 
     .notice {
       margin-top: 18px;
-      border: 1px solid rgba(245, 158, 11, 0.30);
-      background: rgba(245, 158, 11, 0.08);
-      color: #92400e;
-      border-radius: 6px;
-      padding: 12px;
-      font-size: 13px;
-      line-height: 1.35;
+      border: 1px solid var(--line);
+      background: var(--bg);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 12px;
+      line-height: 1.55;
     }
 
     .topbar {
@@ -177,21 +250,33 @@
 
     button {
       min-height: 40px;
-      border: 1px solid var(--line);
-      border-radius: 6px;
+      border: 1.5px solid var(--line);
+      border-radius: 0;
       background: #fff;
       color: var(--ink);
-      padding: 9px 13px;
+      padding: 9px 20px;
       cursor: pointer;
       font-weight: 600;
-      font-family: 'Mosk', Arial, Helvetica, sans-serif;
-      font-size: 13px;
+      font-family: 'DM Sans', 'Inter', 'Mosk', Arial, Helvetica, sans-serif;
+      font-size: 12px;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      transition: border-color 0.15s, background 0.15s, color 0.15s;
+    }
+    button:hover {
+      border-color: var(--accent);
+      background: var(--soft);
+      color: var(--accent);
     }
 
     button.primary {
       border-color: var(--accent);
       background: var(--accent);
-      color: #000000;
+      color: #ffffff;
+    }
+    button.primary:hover {
+      background: var(--accent-2);
+      border-color: var(--accent-2);
     }
 
     /* ── KPI summary row — 5 cards ── */
@@ -213,10 +298,10 @@
     .shade-stage {
       min-height: 300px;
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: 0;
       background:
-        linear-gradient(90deg, rgba(255,255,255,0.74) 0 10px, transparent 10px 88px) 0 0 / 98px 100%,
-        linear-gradient(180deg, #eef2f5, #dde5ea);
+        linear-gradient(90deg, rgba(255,255,255,0.45) 0 10px, transparent 10px 86px) 0 0 / 92px 100%,
+        linear-gradient(180deg, #EDE8E0 0%, #DDD8CF 60%, #CECCBC 100%);
       display: grid;
       place-items: center;
       padding: 26px;
@@ -227,18 +312,18 @@
       position: relative;
       width: min(100%, 330px);
       height: 248px;
-      border: 10px solid #f8fafc;
-      border-radius: 8px;
-      background: linear-gradient(180deg, #dcebf2 0%, #f5f8fb 62%, #e7edf1 100%);
-      box-shadow: 0 18px 28px rgba(24, 32, 42, 0.16);
+      border: 10px solid #F2EDE6;
+      border-radius: 0;
+      background: linear-gradient(180deg, #E8F0F5 0%, #F4F7FA 62%, #E4EBF0 100%);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14), 0 2px 6px rgba(0,0,0,0.08);
     }
 
     .shade-rail {
       position: absolute;
       top: -8px; left: 7%; right: 7%;
-      height: 15px;
-      border-radius: 999px;
-      background: #2f3742;
+      height: 14px;
+      border-radius: 0;
+      background: #1A1A1A;
       z-index: 2;
     }
 
@@ -259,22 +344,23 @@
       position: absolute;
       left: 0; right: 0; bottom: -7px;
       height: 10px;
-      border-radius: 999px;
-      background: #46515c;
+      border-radius: 0;
+      background: #2A2A2A;
     }
 
     .motor-badge {
       position: absolute;
-      right: -15px; top: 20px;
-      width: 34px; height: 34px;
-      border-radius: 50%;
-      background: #fff;
-      border: 1px solid var(--line);
+      right: -14px; top: 20px;
+      width: 32px; height: 32px;
+      border-radius: 0;
+      background: var(--accent);
+      border: none;
       display: grid;
       place-items: center;
-      color: var(--accent);
-      font-size: 18px; font-weight: 900;
-      box-shadow: 0 8px 18px rgba(24, 32, 42, 0.14);
+      color: #fff;
+      font-size: 13px; font-weight: 700;
+      letter-spacing: 0;
+      box-shadow: 0 4px 12px rgba(232,116,28,0.35);
     }
 
     .visual-copy {
@@ -293,55 +379,57 @@
 
     .spec {
       border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 12px;
-      background: #fafafa;
+      border-radius: 0;
+      padding: 12px 14px;
+      background: var(--bg);
+      border-left: 2px solid var(--accent-2);
     }
 
     .spec span {
       display: block;
       color: var(--muted);
-      font-size: 11px; font-weight: 700;
+      font-size: 10px; font-weight: 700;
       text-transform: uppercase;
+      letter-spacing: 0.8px;
       margin-bottom: 6px;
     }
 
-    .spec strong { display: block; font-size: 16px; line-height: 1.2; }
+    .spec strong { display: block; font-size: 15px; line-height: 1.2; font-weight: 600; }
 
     .metric, .panel {
       background: var(--panel);
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: 0;
       box-shadow: var(--shadow);
     }
 
     .metric {
-      padding: 16px;
-      min-height: 118px;
+      padding: 20px 18px 16px;
+      min-height: 122px;
       display: grid;
       align-content: space-between;
       gap: 10px;
     }
 
-    /* Accent top border on KPI cards */
+    /* Accent top border on KPI cards — HD orange as primary, semantic colors for others */
     .metric { border-top: 3px solid var(--accent); }
-    .metric.m-warn  { border-top-color: #F59E0B; }
-    .metric.m-pos   { border-top-color: #44DC98; }
-    .metric.m-incr  { border-top-color: #8B5CF6; }
+    .metric.m-warn  { border-top-color: var(--accent-2); }
+    .metric.m-pos   { border-top-color: #2D8A5A; }  /* green — positive margin */
+    .metric.m-incr  { border-top-color: #7C5AC7; }
     .metric.m-wtd   { border-top-color: #2563EB; }
 
     /* ADDED ── Data Import sidebar section ── */
     .import-status {
       margin-top: 8px;
-      padding: 8px 10px;
+      padding: 8px 12px;
       border-radius: 6px;
       font-size: 12px;
       font-weight: 600;
-      background: #f5f5f5;
+      background: var(--bg);
       color: var(--muted);
       border: 1px dashed var(--line);
     }
-    .import-status.ok { background: #e8faf3; color: #0d6b47; border-color: #44DC98; }
+    .import-status.ok { background: var(--soft); color: var(--ink); border-color: var(--accent); }
     .import-status.err { background: #fff1f2; color: #9f1239; border-color: #fecdd3; }
 
     /* ADDED ── Incremental Margin Matrix ── */
@@ -355,15 +443,15 @@
     .im-table th:first-child { text-align: left; }
     .im-table td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: center; white-space: nowrap; }
     .im-table td:first-child { text-align: left; font-weight: 700; }
-    .im-table .im-diag { background: #f5f5f5; color: var(--muted); font-weight: 400; }
+    .im-table .im-diag { background: var(--bg); color: var(--muted); font-weight: 400; }
     .im-table tr:last-child td { border-bottom: 0; }
     .im-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: var(--muted); }
 
     .metric span {
       color: var(--muted);
-      font-size: 11px; font-weight: 600;
+      font-size: 10px; font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.4px;
+      letter-spacing: 0.8px;
       display: flex; align-items: center; gap: 5px;
     }
 
@@ -371,7 +459,7 @@
       font-size: clamp(22px, 2.5vw, 34px);
       line-height: 1.05;
       font-weight: 700;
-      color: #000000;
+      color: var(--ink);
     }
 
     .metric small { color: var(--muted); font-size: 12px; }
@@ -421,21 +509,27 @@
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      margin-bottom: 14px;
+      margin-bottom: 0;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 18px;
     }
 
-    h2 { margin: 0; font-size: 18px; font-weight: 700; color: #000000; }
+    h2 { margin: 0; font-size: 17px; font-weight: 700; color: var(--ink); letter-spacing: -0.4px; }
 
     .pill {
       display: inline-flex;
       align-items: center;
-      min-height: 28px;
-      border-radius: 999px;
+      min-height: 26px;
+      border-radius: 0;
       background: var(--soft);
-      color: var(--accent-2);
-      padding: 5px 10px;
-      font-size: 12px; font-weight: 700;
+      color: var(--ink);
+      border: 1px solid var(--line);
+      padding: 4px 10px;
+      font-size: 10px; font-weight: 700;
       white-space: nowrap;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
     }
 
     .breakdown {
@@ -456,9 +550,9 @@
     }
 
     .bar-track {
-      height: 12px;
+      height: 10px;
       border-radius: 999px;
-      background: #E5E5E5;
+      background: var(--line);
       overflow: hidden;
     }
 
@@ -486,25 +580,29 @@
 
     th {
       color: var(--muted);
-      font-size: 11px;
+      font-size: 10px;
+      font-weight: 700;
       text-transform: uppercase;
+      letter-spacing: 0.8px;
+      background: var(--bg);
     }
 
     tr:last-child td {
       border-bottom: 0;
       font-weight: 700;
-      background: #f5f5f5;
+      background: var(--soft);
     }
 
     .error {
       display: none;
       margin-bottom: 18px;
-      border: 1px solid rgba(220, 38, 38, 0.35);
-      background: #fff1f2;
-      color: #9f1239;
-      border-radius: 8px;
-      padding: 14px;
-      font-size: 14px;
+      border: 1px solid #DC2626;
+      border-left: 3px solid #DC2626;
+      background: #fff5f5;
+      color: #7f1d1d;
+      border-radius: 0;
+      padding: 14px 16px;
+      font-size: 13px;
     }
     .error.show { display: block; }
 
@@ -518,22 +616,27 @@
     .delta-pos { color: #0d6b47; font-weight: 700; }
     .delta-neg { color: #DC2626; font-weight: 700; }
 
+    /* Table row hover */
+    tbody tr:not(:last-child):hover td { background: var(--bg); transition: background 0.1s; }
+
     /* Selected (current) grid row */
-    .row-selected td { background: #e8faf3 !important; font-weight: 700; }
+    .row-selected td { background: var(--soft) !important; font-weight: 700; }
     .sel-badge {
       display: inline-flex;
-      padding: 1px 7px;
-      border-radius: 999px;
-      font-size: 10px; font-weight: 700;
-      background: var(--soft);
-      color: var(--accent);
+      padding: 2px 6px;
+      border-radius: 0;
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      background: var(--accent);
+      color: #fff;
       vertical-align: middle;
-      margin-left: 5px;
+      margin-left: 6px;
     }
 
     /* Mini MSRP bar inside grid comparison */
     .gc-bar-wrap { display: flex; align-items: center; gap: 7px; justify-content: flex-end; }
-    .gc-bar-track { width: 70px; height: 7px; border-radius: 999px; background: #E5E5E5; overflow: hidden; }
+    .gc-bar-track { width: 70px; height: 7px; border-radius: 999px; background: var(--line); overflow: hidden; }
     .gc-bar-fill  { height: 100%; border-radius: 999px; background: var(--accent); }
 
     /* ══════════════════════════════════════════════
@@ -543,14 +646,17 @@
 
     .preset-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
     .preset-btn {
-      min-height: 30px;
-      padding: 4px 12px;
+      min-height: 28px;
+      padding: 3px 12px;
       border: 1px solid var(--line);
-      border-radius: 999px;
+      border-radius: 0;
       background: #fff;
-      font-size: 12px; font-weight: 700;
+      font-size: 11px; font-weight: 600;
       cursor: pointer;
-      color: var(--ink);
+      color: var(--muted);
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      transition: all 0.15s;
     }
     .preset-btn:hover { background: var(--soft); border-color: var(--accent); color: var(--accent); }
 
@@ -564,37 +670,95 @@
     }
     .wt-vol-input:focus { border-color: var(--accent); outline: none; }
 
-    .wt-result-row td { background: #f5f5f5 !important; font-weight: 700; border-top: 2px solid var(--line) !important; }
-    .wt-gm-highlight { color: var(--accent); font-size: 16px; }
+    .wt-result-row td { background: var(--soft) !important; font-weight: 700; border-top: 2px solid var(--accent) !important; }
+    .wt-gm-highlight { color: var(--accent); font-size: 16px; font-weight: 700; }
 
     /* ══════════════════════════════════════════════
        RESPONSIVE
     ══════════════════════════════════════════════ */
     @media (max-width: 980px) {
-      .app { grid-template-columns: 1fr; }
-      aside { border-right: 0; border-bottom: 1px solid var(--line); }
-      /* MODIFIED: summary and breakdown responsive (6 cols → 2 cols on mobile) */
+      .app { flex-direction: column; }
+      aside { width: 100% !important; border-right: none; border-bottom: 1px solid var(--line); }
+      .sidebar-toggle { display: none; }
       .summary, .breakdown, .visual-panel { grid-template-columns: 1fr 1fr; }
     }
 
     @media (max-width: 640px) {
-      aside, main { padding: 18px; }
+      aside { padding: 18px !important; }
+      main { padding: 18px; }
       .row, .summary, .breakdown, .visual-panel, .spec-list { grid-template-columns: 1fr; }
       .topbar, .panel-head { display: grid; }
       .bar-row { grid-template-columns: 88px 1fr 74px; }
       table { display: block; overflow-x: auto; }
     }
 
+    /* ── Window Proportion Simulation bar ── */
+    .win-sim-bar {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding-bottom: 14px;
+      margin-bottom: 4px;
+      border-bottom: 1px solid var(--line);
+      flex-wrap: wrap;
+    }
+    .win-sim-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      white-space: nowrap;
+    }
+    .win-sim-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .win-sim-field {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .win-sim-dim-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      min-width: 14px;
+    }
+    .win-sim-input {
+      width: 80px !important;
+      min-height: 34px !important;
+      font-size: 13px !important;
+      font-weight: 600 !important;
+      text-align: right;
+      padding: 5px 8px !important;
+    }
+    .win-sim-separator {
+      font-size: 16px;
+      font-weight: 300;
+      color: var(--line);
+      line-height: 1;
+    }
+    .win-sim-unit {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+    }
+
     /* ── Curtain column (each curtain gets its own shade-stage column) ── */
     .curtain-col { display: flex; flex-direction: column; }
     .curtain-col-label {
       text-align: center;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: .5px;
+      letter-spacing: 1.8px;
       color: var(--muted);
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
 
     /* ── Curtain B compact inputs (below B's preview) ── */
@@ -603,16 +767,16 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-      padding: 10px;
+      padding: 12px;
       border: 1px solid var(--line);
-      border-radius: 6px;
-      background: #fafafa;
+      border-radius: 0;
+      background: var(--bg);
     }
     .curtain-b-label {
       font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: .4px;
+      letter-spacing: 0.8px;
       color: var(--muted);
       margin-bottom: 3px;
     }
@@ -638,10 +802,10 @@
       border-top: 1px solid var(--line);
     }
     .compare-values-title {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: .4px;
+      letter-spacing: 1px;
       color: var(--muted);
       margin-bottom: 10px;
       grid-column: 1 / -1;
@@ -649,6 +813,296 @@
 
     @media (max-width: 640px) {
       .compare-values { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* ── Lower Tables Tab System ── */
+    #lowerTabsContainer { margin-bottom: 18px; }
+    .tab-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2px;
+      border-bottom: 2px solid var(--line);
+    }
+    .tab-btn {
+      min-height: unset;
+      padding: 10px 20px;
+      border: 1px solid var(--line);
+      border-bottom: none;
+      border-radius: 0;
+      background: var(--soft);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'DM Sans', 'Inter', 'Mosk', Arial, Helvetica, sans-serif;
+      cursor: pointer;
+      position: relative;
+      margin-bottom: -2px;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      transition: background 0.15s, color 0.15s;
+    }
+    .tab-btn:hover { background: var(--soft); color: var(--accent); border-color: var(--accent); }
+    .tab-btn.active {
+      background: #fff;
+      color: var(--accent);
+      border-color: var(--line);
+      border-bottom-color: #fff;
+      z-index: 1;
+      border-top: 2px solid var(--accent);
+    }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+    .tab-panel { border-top-left-radius: 0; margin-bottom: 0; }
+
+    /* ══════════════════════════════════════════════════════════
+       HUNTER DOUGLAS BRAND HEADER — clean white, real logo
+    ══════════════════════════════════════════════════════════ */
+    .hd-header {
+      margin: -28px -28px 20px;
+      background: #FFFFFF;
+      padding: 0 20px;
+      height: 82px;
+      box-sizing: border-box;
+      border-bottom: 3px solid var(--accent);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .hd-logo-img {
+      display: block;
+      width: 220px;
+      height: auto;
+      margin-bottom: 4px;
+    }
+
+    .hd-tool-label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+    }
+
+    /* Remove residual border-top on aside — header block is the visual anchor */
+    aside { border-top: none; }
+
+    /* ══════════════════════════════════════════════════════════
+       ELEVATED KPI CARDS
+    ══════════════════════════════════════════════════════════ */
+    .metric { border-top-width: 4px; min-height: 138px; padding: 20px 20px 16px; }
+
+    /* Larger, bolder KPI values */
+    .metric strong {
+      font-size: clamp(28px, 3vw, 42px) !important;
+      font-weight: 800 !important;
+      letter-spacing: -1px;
+    }
+
+    /* Subtle tinted background on the positive-margin card */
+    .metric.m-pos { background: linear-gradient(160deg, #fff 60%, var(--soft)); }
+
+    /* ══════════════════════════════════════════════════════════
+       MAIN HEADER — EDITORIAL TREATMENT
+    ══════════════════════════════════════════════════════════ */
+    .topbar-wrap {
+      background: var(--panel);
+      border-bottom: 3px solid var(--accent);
+      padding: 0 32px;
+      height: 82px;
+      box-sizing: border-box;
+      margin: 0 -32px 24px;
+      display: flex;
+      align-items: center;
+    }
+    .topbar-wrap .topbar { width: 100%; margin-bottom: 0; align-items: center; }
+
+    main h1 {
+      display: inline-block;
+      padding-bottom: 8px;
+      border-bottom: 3px solid var(--accent-2);
+      margin-bottom: 0;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       SECTION PANEL HEADERS — MORE DRAMATIC
+    ══════════════════════════════════════════════════════════ */
+    .panel-head h2 {
+      font-size: 16px;
+      letter-spacing: -0.3px;
+    }
+
+    /* Accent rule under visual-panel label area */
+    .visual-copy h2 {
+      font-size: 20px;
+      letter-spacing: -0.6px;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       SHADE STAGE — RICHER BACKDROP
+    ══════════════════════════════════════════════════════════ */
+    .shade-stage {
+      background:
+        linear-gradient(90deg, rgba(255,255,255,0.38) 0 10px, transparent 10px 85px) 0 0 / 90px 100%,
+        linear-gradient(160deg, #E8E2D6 0%, #D6CFBF 55%, #C8C0AD 100%) !important;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       SUMMARY SECTION — BOLDER GRID
+    ══════════════════════════════════════════════════════════ */
+    .summary { gap: 16px; margin-bottom: 20px; }
+
+    /* ══════════════════════════════════════════════════════════
+       SECTION LABEL (above visual panels)
+    ══════════════════════════════════════════════════════════ */
+    .curtain-col-label {
+      font-size: 9px !important;
+      letter-spacing: 2.2px !important;
+      padding: 4px 8px;
+      background: var(--accent);
+      color: #fff !important;
+      display: inline-block;
+      margin-bottom: 10px !important;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       IMPORT STATUS — ACCENT TREATMENT
+    ══════════════════════════════════════════════════════════ */
+    .import-status.ok {
+      border-left: 3px solid var(--accent);
+      background: var(--soft);
+      color: var(--ink);
+      border-color: var(--accent);
+    }
+
+    /* Ensure consistent panel-head spacing everywhere */
+    .panel-head { margin-bottom: 20px !important; }
+
+    /* ══════════════════════════════════════════════════════════
+       PRINT STYLES — Professional PDF output
+    ══════════════════════════════════════════════════════════ */
+    .print-header { display: none; }
+
+    @media print {
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+      /* Page setup — margin:0 suprime header/footer padrão do browser */
+      @page { margin: 0; size: A4 landscape; }
+
+      body {
+        background: #fff !important;
+        font-size: 11px;
+        padding: 12mm 14mm !important;
+        margin: 0 !important;
+      }
+
+      /* Hide all interactive / sidebar elements */
+      aside,
+      .sidebar-toggle,
+      .topbar-wrap,
+      .win-sim-bar,
+      .curtain-b-inputs,
+      .actions,
+      .tab-bar,
+      .error,
+      .visual-panel { display: none !important; }
+
+      /* App becomes a single column */
+      .app { display: block !important; }
+      main { padding: 0 !important; border: none !important; }
+
+      /* ── Print header with logo + meta ── */
+      .print-header {
+        display: flex !important;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 3px solid #E8741C;
+        padding-bottom: 10px;
+        margin-bottom: 18px;
+      }
+      .print-header-logo { height: 38px; width: auto; }
+      .print-header-meta { text-align: right; }
+      .print-header-meta h2 {
+        font-size: 16px;
+        font-weight: 700;
+        color: #3C4858;
+        margin: 0 0 3px;
+        letter-spacing: -0.3px;
+      }
+      .print-header-meta p {
+        font-size: 10px;
+        color: #7A8B9C;
+        margin: 0;
+      }
+
+      /* ── KPI summary — 5 cards in one row ── */
+      .summary {
+        display: grid !important;
+        grid-template-columns: repeat(5, 1fr) !important;
+        gap: 10px !important;
+        margin-bottom: 14px !important;
+      }
+      .metric {
+        border: 1px solid #DDE2E8 !important;
+        border-top: 3px solid #E8741C !important;
+        box-shadow: none !important;
+        padding: 12px 12px 10px !important;
+        min-height: unset !important;
+        break-inside: avoid;
+      }
+      .metric.m-warn  { border-top-color: #C25E0F !important; }
+      .metric.m-pos   { border-top-color: #2D8A5A !important; }
+      .metric.m-incr  { border-top-color: #7C5AC7 !important; }
+      .metric.m-wtd   { border-top-color: #2563EB !important; }
+      .metric strong  { font-size: 22px !important; letter-spacing: -0.5px !important; }
+      .metric span    { font-size: 9px !important; }
+      .metric small   { font-size: 10px !important; }
+      .metric.m-pos   { background: #fff !important; }
+
+      /* ── Panels ── */
+      .panel {
+        box-shadow: none !important;
+        border: 1px solid #DDE2E8 !important;
+        margin-bottom: 12px !important;
+        padding: 14px !important;
+        break-inside: avoid;
+      }
+
+      /* ── All tab panes visible ── */
+      .tab-pane { display: block !important; }
+      #lowerTabsContainer { margin-bottom: 0 !important; }
+
+      /* ── Tables ── */
+      table { font-size: 10px !important; }
+      th { font-size: 9px !important; background: #F4F5F7 !important; padding: 6px 8px !important; }
+      td { padding: 6px 8px !important; }
+      tr:last-child td { background: #F0EFED !important; }
+
+      /* ── Panel heads ── */
+      .panel-head { margin-bottom: 12px !important; padding-bottom: 10px !important; }
+      h2 { font-size: 13px !important; }
+
+      /* ── Bars ── */
+      .breakdown { grid-template-columns: 1fr 2fr !important; gap: 12px !important; }
+      .bar-track { height: 8px !important; }
+
+      /* ── Spec cards ── */
+      .spec { padding: 8px 10px !important; }
+      .spec strong { font-size: 12px !important; }
+
+      /* ── Hide visual / tab chrome from lower panels ── */
+      .tab-panel { border-top-left-radius: 0; margin-bottom: 10px !important; }
+
+      /* ── Incremental matrix: smaller font ── */
+      .im-table { font-size: 10px !important; }
+      .im-table th, .im-table td { padding: 5px 7px !important; }
+
+      /* ── Preset buttons hidden ── */
+      .preset-btns { display: none !important; }
+
+      /* ── Weighted table ── */
+      .wt-vol-input { display: none !important; }
     }
   </style>
 </head>
@@ -659,8 +1113,14 @@
          SIDEBAR — Inputs
     ════════════════════════════════════════════════ -->
     <aside>
-      <h1>Motorized Shade Calculator</h1>
-      <p class="subtitle">Enter the shade configuration to calculate MSRP, selling price, estimated cost, and margin.</p>
+
+      <!-- ── Hunter Douglas brand header ── -->
+      <div class="hd-header">
+        <img src="HD.png" alt="Hunter Douglas" class="hd-logo-img">
+        <div class="hd-tool-label">Price Cost Calculator</div>
+      </div>
+
+      <p class="subtitle" style="margin-top:4px">Enter the shade configuration to calculate MSRP, selling price, estimated cost, and margin.</p>
 
       <form id="calculator" class="form-grid">
         <div class="row">
@@ -707,32 +1167,13 @@
             <input id="costFactorRange" type="range" min="0.1" max="1" step="0.01" value="0.4">
             <input id="costFactor" type="number" min="0.1" max="1" step="0.01" placeholder="0.40">
           </div>
-          <span class="hint">Example: 0.40 = 40% of MSRP</span>
+          <span class="hint">Valid range: 0.10 – 1.00 · Example: 0.40 = 40% of MSRP</span>
         </label>
       </form>
 
-      <!-- ── Portfolio / Incremental section ── -->
-      <div class="sidebar-section">
-        <div class="sidebar-section-title">
-          Portfolio &amp; Incremental Analysis
-          <span class="tip" data-tip="Volume is used to compute Incremental Margin $ in the Grid Comparison table.
-The Weighted Size Analysis uses per-width volumes you enter there.">?</span>
-        </div>
-        <div class="form-grid">
-          <label>
-            Volume (units)
-            <input id="volume" type="number" min="0" step="1" placeholder="e.g. 100">
-            <span class="hint">Units sold — scales incremental margin $</span>
-          </label>
-          <label>
-            Baseline for comparison
-            <select id="compareGrid">
-              <option value="">Same as selected grid</option>
-            </select>
-            <span class="hint">Override comparison baseline in grid table</span>
-          </label>
-        </div>
-      </div>
+      <!-- Hidden inputs preserved for JS data bindings -->
+      <input id="volume" type="number" style="display:none" value="">
+      <select id="compareGrid" style="display:none"></select>
 
       <div class="notice" id="boundsNotice"></div>
 
@@ -768,18 +1209,35 @@ Excel/CSV: columns Width and Volume (row 1 = headers).">?</span>
 
     </aside>
 
+    <!-- Sidebar toggle tab -->
+    <button class="sidebar-toggle" id="sidebarToggle" title="Abrir/fechar painel" aria-label="Toggle sidebar">
+      <span id="sidebarToggleIcon">‹</span>
+    </button>
+
     <!-- ═══════════════════════════════════════════════
          MAIN — Results
     ════════════════════════════════════════════════ -->
     <main>
-      <div class="topbar">
-        <div>
-          <h1>Interactive Quote Indicator</h1>
-          <p class="subtitle">Values update automatically as the customer changes the configuration.</p>
+
+      <!-- Print-only header — hidden on screen, shown on print -->
+      <div class="print-header">
+        <img src="HD.png" alt="Hunter Douglas" class="print-header-logo">
+        <div class="print-header-meta">
+          <h2>Price Cost Calculator — Quote</h2>
+          <p id="printDateLine">Generated on —</p>
         </div>
-        <div class="actions">
-          <button type="button" id="resetBtn">Reset</button>
-          <button type="button" class="primary" id="printBtn">Print quote</button>
+      </div>
+
+      <div class="topbar-wrap">
+        <div class="topbar">
+          <div>
+            <h1>Interactive Quote Indicator</h1>
+            <p class="subtitle" style="margin-top:4px;margin-bottom:0">Values update automatically as the customer changes the configuration.</p>
+          </div>
+          <div class="actions">
+            <button type="button" id="resetBtn">Reset</button>
+            <button type="button" class="primary" id="printBtn">Print quote</button>
+          </div>
         </div>
       </div>
 
@@ -787,6 +1245,25 @@ Excel/CSV: columns Width and Volume (row 1 = headers).">?</span>
 
       <!-- Visual preview — 3-column: Curtain A | Curtain B + inputs | Info -->
       <section class="panel visual-panel">
+
+        <!-- Shared window proportion simulation — frame stays fixed, shade scales (spans all 3 columns) -->
+        <div class="win-sim-bar">
+          <div class="win-sim-label">Window Simulation</div>
+          <div class="win-sim-controls">
+            <div class="win-sim-field">
+              <span class="win-sim-dim-label">W</span>
+              <input id="winSimWidth" class="win-sim-input" type="number" min="1" step="0.5" placeholder="—">
+              <span class="win-sim-unit">in</span>
+            </div>
+            <span class="win-sim-separator">×</span>
+            <div class="win-sim-field">
+              <span class="win-sim-dim-label">H</span>
+              <input id="winSimHeight" class="win-sim-input" type="number" min="1" step="0.5" placeholder="—">
+              <span class="win-sim-unit">in</span>
+            </div>
+          </div>
+          <span class="hint">Curtain A &amp; B scale proportionally — empty = use Curtain A's measurements</span>
+        </div>
 
         <!-- Curtain A -->
         <div class="curtain-col">
@@ -854,15 +1331,15 @@ Excel/CSV: columns Width and Volume (row 1 = headers).">?</span>
           <div class="compare-values" id="compareValues" style="display:none">
             <div class="compare-values-title">A vs B Comparison</div>
             <div class="spec">
-              <span>Price Diff (A−B)</span>
+              <span>Price Diff (B−A)</span>
               <strong id="cmpPriceDiff">—</strong>
             </div>
             <div class="spec">
-              <span>Cost Diff (A−B)</span>
+              <span>Cost Diff (B−A)</span>
               <strong id="cmpCostDiff">—</strong>
             </div>
             <div class="spec">
-              <span>Margin Diff (A−B)</span>
+              <span>Margin Diff (B−A)</span>
               <strong id="cmpMarginDiff">—</strong>
             </div>
           </div>
@@ -935,7 +1412,7 @@ Shade cost = MSRP × grid-specific cost/MSRP ratio.">?</span>
       <section class="panel">
         <div class="panel-head">
           <h2>MSRP Composition</h2>
-          <span class="pill" id="maxWidthPill">Grid limit: 119"</span>
+          <span class="pill" id="maxWidthPill" style="display:none">Grid limit: 119"</span>
         </div>
         <div class="breakdown">
           <div class="bars" id="bars"></div>
@@ -944,9 +1421,9 @@ Shade cost = MSRP × grid-specific cost/MSRP ratio.">?</span>
               <tr>
                 <th>Component</th>
                 <th>MSRP</th>
-                <th>Price</th>
-                <th>Cost</th>
-                <th>Margin</th>
+                <th>Customer Price</th>
+                <th>Estimated Cost</th>
+                <th>Margin %</th>
                 <th>Cost/MSRP</th>
               </tr>
             </thead>
@@ -955,26 +1432,33 @@ Shade cost = MSRP × grid-specific cost/MSRP ratio.">?</span>
         </div>
       </section>
 
-      <!-- Current configuration -->
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Current Configuration</h2>
-          <span class="pill" id="systemPill">PowerView Gen 3</span>
+      <!-- ── Lower tables in tabs ── -->
+      <div id="lowerTabsContainer">
+        <div class="tab-bar">
+          <button class="tab-btn active" data-target="tabPane-config">Configuration</button>
+          <button class="tab-btn" data-target="tabPane-gc">Grid Comparison</button>
+          <button class="tab-btn" data-target="tabPane-im">Incremental Matrix</button>
+          <button class="tab-btn" data-target="tabPane-wt">Weighted Analysis</button>
         </div>
-        <table><tbody id="configBody"></tbody></table>
-      </section>
 
-      <!-- ═════════════════════════════════════════════════════════════
-           GRID COMPARISON TABLE
-           Requirement 2: Incremental margin between all grid pairs.
-           Shows all 7 DRSA-DRSG grids at the current height/width
-           with Δ GM% and Δ Margin $ vs the selected baseline.
-      ═════════════════════════════════════════════════════════════════ -->
-      <section class="panel" id="gcPanel" style="display:none">
-        <div class="panel-head">
-          <h2>
-            Grid Comparison — All Grids at This Size
-            <span class="tip" data-tip="Compares every fabric grid (DRSA–DRSG) at the exact
+        <!-- Tab Pane: Current Configuration -->
+        <div id="tabPane-config" class="tab-pane active">
+          <section class="panel tab-panel">
+            <div class="panel-head">
+              <h2>Current Configuration</h2>
+              <span class="pill" id="systemPill">PowerView Gen 3</span>
+            </div>
+            <table><tbody id="configBody"></tbody></table>
+          </section>
+        </div>
+
+        <!-- Tab Pane: Grid Comparison -->
+        <div id="tabPane-gc" class="tab-pane">
+          <section class="panel tab-panel" id="gcPanel">
+            <div class="panel-head">
+              <h2>
+                Grid Comparison — All Grids at This Size
+                <span class="tip" data-tip="Compares every fabric grid (DRSA–DRSG) at the exact
 height × width you entered.
 
 Δ GM% = GM%_grid − GM%_baseline
@@ -984,48 +1468,44 @@ height × width you entered.
 
 The baseline is the selected grid (or override in sidebar).
 Positive deltas are green; negative are red.">?</span>
-          </h2>
-          <span class="pill" id="gcBaselinePill">Baseline: —</span>
-        </div>
-        <div style="overflow-x:auto">
-          <table class="gc-table">
-            <thead>
-              <tr>
-                <th style="text-align:left">Grid</th>
-                <th>MSRP</th>
-                <th>Customer Price</th>
-                <th>Cost</th>
-                <th>GM%</th>
-                <th>
-                  Δ GM%
-                  <span class="tip" data-tip="GM%_this_grid − GM%_baseline
+              </h2>
+              <span class="pill" id="gcBaselinePill">Baseline: —</span>
+            </div>
+            <div style="overflow-x:auto">
+              <table class="gc-table">
+                <thead>
+                  <tr>
+                    <th style="text-align:left">Grid</th>
+                    <th>MSRP</th>
+                    <th>Customer Price</th>
+                    <th>Cost</th>
+                    <th>GM%</th>
+                    <th>
+                      Δ GM%
+                      <span class="tip" data-tip="GM%_this_grid − GM%_baseline
 Positive = better margin than baseline.">?</span>
-                </th>
-                <th>
-                  Δ Margin $
-                  <span class="tip" data-tip="(Margin/unit_this − Margin/unit_baseline) × Volume
+                    </th>
+                    <th>
+                      Δ Margin $
+                      <span class="tip" data-tip="(Margin/unit_this − Margin/unit_baseline) × Volume
 Requires the Volume field to be filled in.">?</span>
-                </th>
-                <th style="min-width:110px">MSRP Bar</th>
-              </tr>
-            </thead>
-            <tbody id="gcBody"></tbody>
-          </table>
+                    </th>
+                    <th style="min-width:110px">MSRP Bar</th>
+                  </tr>
+                </thead>
+                <tbody id="gcBody"><tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">Enter a configuration to see grid comparison data.</td></tr></tbody>
+              </table>
+            </div>
+          </section>
         </div>
-      </section>
 
-      <!-- ADDED ════════════════════════════════════════════════════════
-           INCREMENTAL MARGIN MATRIX
-           Requirement 2 (extended): Full NxN matrix of incremental margin
-           between every combination of grids at the current height × width.
-           Each cell = (margin/unit_col − margin/unit_row) × volume
-           Green = gain when moving from row grid TO column grid.
-      ═════════════════════════════════════════════════════════════════ -->
-      <section class="panel" id="imPanel" style="display:none">
-        <div class="panel-head">
-          <h2>
-            Incremental Margin Matrix ($)
-            <span class="tip" data-tip="Shows the $ gain from moving a customer
+        <!-- Tab Pane: Incremental Margin Matrix -->
+        <div id="tabPane-im" class="tab-pane">
+          <section class="panel tab-panel" id="imPanel">
+            <div class="panel-head">
+              <h2>
+                Incremental Margin Matrix ($)
+                <span class="tip" data-tip="Shows the $ gain from moving a customer
 from any grid (row) to any other grid (column).
 
 Formula per cell:
@@ -1036,34 +1516,30 @@ Red   = loss when moving to the column grid.
 
 Enter Volume in the sidebar to activate $ values.
 Without volume: shows Δ GM% between pairs.">?</span>
-          </h2>
-          <span class="pill" id="imVolPill">Volume: —</span>
+              </h2>
+              <span class="pill" id="imVolPill">Volume: —</span>
+            </div>
+            <div style="overflow-x:auto">
+              <table class="im-table" id="imTableEl">
+                <thead id="imHead"></thead>
+                <tbody id="imBody"><tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">Enter a configuration to see the incremental margin matrix.</td></tr></tbody>
+              </table>
+            </div>
+            <div class="im-legend">
+              <span><span style="color:#0d6b47;font-weight:700">▲ Green</span> = gain when moving to the column grid</span>
+              <span><span style="color:#DC2626;font-weight:700">▼ Red</span> = loss when moving to the column grid</span>
+              <span style="color:var(--muted)">Diagonal = same grid (reference GM%)</span>
+            </div>
+          </section>
         </div>
-        <div style="overflow-x:auto">
-          <table class="im-table" id="imTableEl">
-            <thead id="imHead"></thead>
-            <tbody id="imBody"></tbody>
-          </table>
-        </div>
-        <div class="im-legend">
-          <span><span style="color:#0d6b47;font-weight:700">▲ Green</span> = gain when moving to the column grid</span>
-          <span><span style="color:#DC2626;font-weight:700">▼ Red</span> = loss when moving to the column grid</span>
-          <span style="color:var(--muted)">Diagonal = same grid (reference GM%)</span>
-        </div>
-      </section>
 
-      <!-- ═════════════════════════════════════════════════════════════
-           WEIGHTED SIZE ANALYSIS
-           Requirement 1: Weighted average margin across all standard widths.
-           Users input volume per width; the dashboard auto-computes
-           Weighted GM% = Σ[(Price−Cost)×Vol] / Σ[Price×Vol].
-           No manual size selection needed.
-      ═════════════════════════════════════════════════════════════════ -->
-      <section class="panel wt-section" id="wtPanel" style="display:none">
-        <div class="panel-head">
-          <h2>
-            Weighted Size Analysis — <span id="wtGridLabel">—</span>
-            <span class="tip" data-tip="Weighted Average Gross Margin across all standard widths for the selected grid.
+        <!-- Tab Pane: Weighted Size Analysis -->
+        <div id="tabPane-wt" class="tab-pane">
+          <section class="panel wt-section tab-panel" id="wtPanel">
+            <div class="panel-head">
+              <h2>
+                Weighted Size Analysis — <span id="wtGridLabel">—</span>
+                <span class="tip" data-tip="Weighted Average Gross Margin across all standard widths for the selected grid.
 
 Formula (revenue-weighted):
   Wtd GM% = Σ[(Price − Cost) × Volume]
@@ -1075,21 +1551,24 @@ by their revenue contribution (Price × Volume), so larger
 or more popular sizes have proportionally more influence.
 
 Enter units sold per width, or use a preset below.">?</span>
-          </h2>
-          <span class="pill" id="wtResultPill">Weighted GM: —</span>
+              </h2>
+              <span class="pill" id="wtResultPill">Weighted GM: —</span>
+            </div>
+
+            <!-- Preset volume distribution buttons -->
+            <div class="preset-btns">
+              <span style="font-size:12px;color:var(--muted);font-weight:700;align-self:center">Volume presets:</span>
+              <button type="button" class="preset-btn" id="presetUniform">Uniform (100 ea.)</button>
+              <button type="button" class="preset-btn" id="presetTypical">Typical mix</button>
+              <button type="button" class="preset-btn" id="presetClear">Clear</button>
+            </div>
+
+            <!-- Weighted table — rebuilt by JS whenever grid or inputs change -->
+            <div id="weightedTable" style="overflow-x:auto"><p style="color:var(--muted);text-align:center;padding:24px">Enter a configuration to see weighted size analysis.</p></div>
+          </section>
         </div>
 
-        <!-- Preset volume distribution buttons -->
-        <div class="preset-btns">
-          <span style="font-size:12px;color:var(--muted);font-weight:700;align-self:center">Volume presets:</span>
-          <button type="button" class="preset-btn" id="presetUniform">Uniform (100 ea.)</button>
-          <button type="button" class="preset-btn" id="presetTypical">Typical mix</button>
-          <button type="button" class="preset-btn" id="presetClear">Clear</button>
-        </div>
-
-        <!-- Weighted table — rebuilt by JS whenever grid or inputs change -->
-        <div id="weightedTable" style="overflow-x:auto"></div>
-      </section>
+      </div><!-- end lowerTabsContainer -->
 
     </main>
   </div>
@@ -1470,7 +1949,6 @@ Enter units sold per width, or use a preset below.">?</span>
        (as specified in the requirements — using unit margin difference × volume)
     ────────────────────────────────────────────────────────────────── */
     function renderGridComparison(height, width, controlSystemName, topTreatmentName, costFactor, panels, baseGrid, volume) {
-      document.getElementById("gcPanel").style.display = "block";
       document.getElementById("gcBaselinePill").textContent = `Baseline: ${baseGrid}`;
 
       const allGrids = Object.keys(shadeCostToMsrp);
@@ -1520,7 +1998,6 @@ Enter units sold per width, or use a preset below.">?</span>
        Volume inputs survive re-renders via the widthVolumes object.
     ────────────────────────────────────────────────────────────────── */
     function renderWeightedAnalysis(height, grid, controlSystemName, topTreatmentName, costFactor, panels) {
-      document.getElementById("wtPanel").style.display = "block";
       document.getElementById("wtGridLabel").textContent = grid;
 
       const widths = gridWidths[grid];
@@ -1636,14 +2113,11 @@ This replaces manually picking a single size.">?</span>
        Diagonal cells show the grid's own GM% (reference).
     ────────────────────────────────────────────────────────────────── */
     function renderIncrementalMatrix(height, width, controlSystemName, topTreatmentName, costFactor, panels, volume) {
-      const panel = document.getElementById("imPanel");
-
       if (!Number.isFinite(height) || !Number.isFinite(width) || !controlSystemName || !topTreatmentName || !Number.isFinite(costFactor)) {
-        panel.style.display = "none";
+        document.getElementById("imHead").innerHTML = "";
+        document.getElementById("imBody").innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">Enter a configuration to see the incremental margin matrix.</td></tr>';
         return;
       }
-
-      panel.style.display = "block";
 
       const vol      = volume || 0;
       const allGrids = Object.keys(shadeCostToMsrp);
@@ -1866,6 +2340,25 @@ This replaces manually picking a single size.">?</span>
        G. EXISTING RENDER FUNCTIONS (extended with new panels)
     ────────────────────────────────────────────────────────────────── */
 
+    /* ── Window Proportion Simulation ── */
+    const winSimW = document.getElementById("winSimWidth");
+    const winSimH = document.getElementById("winSimHeight");
+    const SHADE_MAX_FILL = 88; // % of window interior a full-width shade should visually fill
+
+    function getSimDim(field, fallback) {
+      const v = parseFloat(field.value);
+      return (Number.isFinite(v) && v > 0) ? v : fallback;
+    }
+
+    /* Compute shade width% and height% relative to the simulated window dimensions.
+       When shade == window → fills SHADE_MAX_FILL%.
+       When shade < window → proportionally smaller. */
+    function shadePercentages(shadeW, shadeH, simWinW, simWinH) {
+      const wPct = clamp((shadeW / simWinW) * SHADE_MAX_FILL, 6, SHADE_MAX_FILL);
+      const hPct = clamp((shadeH / simWinH) * SHADE_MAX_FILL, 6, SHADE_MAX_FILL);
+      return { wPct, hPct };
+    }
+
     const fields = {
       height:         document.getElementById("height"),
       width:          document.getElementById("width"),
@@ -1902,9 +2395,10 @@ This replaces manually picking a single size.">?</span>
       document.getElementById("breakdownBody").innerHTML = "";
       document.getElementById("bars").innerHTML          = "";
       document.getElementById("configBody").innerHTML    = "";
-      document.getElementById("gcPanel").style.display  = "none";
-      document.getElementById("wtPanel").style.display  = "none";
-      document.getElementById("imPanel").style.display  = "none";
+      document.getElementById("gcBody").innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">Enter a configuration to see grid comparison data.</td></tr>';
+      document.getElementById("weightedTable").innerHTML = '<p style="color:var(--muted);text-align:center;padding:24px">Enter a configuration to see weighted size analysis.</p>';
+      document.getElementById("imHead").innerHTML = "";
+      document.getElementById("imBody").innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">Enter a configuration to see the incremental margin matrix.</td></tr>';
       document.getElementById("marginPct").textContent = "—";
       document.getElementById("marginPct").style.color = "inherit";
       document.getElementById("totalMarginDollar").textContent = "$0.00";
@@ -1918,15 +2412,20 @@ This replaces manually picking a single size.">?</span>
       const sp2 = document.getElementById("shadePreview2");
       sp2.style.width = "58%"; sp2.style.height = "58%"; sp2.style.left = "21%";
       sp2.style.setProperty("--shade", "#d8c9ad");
+      winSimW.placeholder = "—";
+      winSimH.placeholder = "—";
     }
 
     function render() {
-      const height        = readNumber(fields.height, NaN);
-      const width         = readNumber(fields.width,  NaN);
-      const grid          = fields.grid.value;
-      const controlSystem = fields.controlSystem.value;
-      const topTreatment  = fields.topTreatment.value;
-      const costFactor    = readNumber(fields.costFactor, NaN);
+      const height           = readNumber(fields.height, NaN);
+      const width            = readNumber(fields.width,  NaN);
+      const grid             = fields.grid.value;
+      const controlSystem    = fields.controlSystem.value;
+      const topTreatment     = fields.topTreatment.value;
+      const rawCostFactor    = readNumber(fields.costFactor, NaN);
+      const costFactor       = Number.isFinite(rawCostFactor)
+        ? Math.min(1, Math.max(0.1, rawCostFactor))
+        : NaN;
       const panels        = Number(fields.panels.value);
       const volume        = readNumber(fields.volume, 0);
       const compareGridVal= fields.compareGrid.value || grid;
@@ -1962,10 +2461,14 @@ This replaces manually picking a single size.">?</span>
         document.getElementById("specGrid").textContent    = grid;
         document.getElementById("specTreatment").textContent = topTreatment;
 
-        /* ── Shade preview animation ── */
+        /* ── Shade A preview — proportional simulation ── */
         const sp = document.getElementById("shadePreview");
-        const pw = clamp((width / maxWidth) * 72, 38, 82);
-        const ph = clamp((height / heights[heights.length - 1]) * 92, 38, 88);
+        // Sync placeholder text so user sees Curtain A's current dimensions as the default
+        winSimW.placeholder = String(width);
+        winSimH.placeholder = String(height);
+        const simW = getSimDim(winSimW, width);
+        const simH = getSimDim(winSimH, height);
+        const { wPct: pw, hPct: ph } = shadePercentages(width, height, simW, simH);
         sp.style.width  = `${pw}%`;
         sp.style.height = `${ph}%`;
         sp.style.left   = `${(100 - pw) / 2}%`;
@@ -2031,10 +2534,9 @@ This replaces manually picking a single size.">?</span>
         const compareValuesEl = document.getElementById("compareValues");
         if (grid2 && controlSystem2 && topTreatment2) {
           try {
-            const maxWidth2 = gridWidths[grid2][gridWidths[grid2].length - 1];
             const total2    = totalMotor(height2, width2, grid2, controlSystem2, topTreatment2, costFactor, panels);
-            const pw2 = clamp((width2 / maxWidth2) * 72, 38, 82);
-            const ph2 = clamp((height2 / heights[heights.length - 1]) * 92, 38, 88);
+            /* Curtain B uses the same shared sim window dimensions as Curtain A */
+            const { wPct: pw2, hPct: ph2 } = shadePercentages(width2, height2, simW, simH);
             sp2.style.width  = `${pw2}%`;
             sp2.style.height = `${ph2}%`;
             sp2.style.left   = `${(100 - pw2) / 2}%`;
@@ -2042,9 +2544,9 @@ This replaces manually picking a single size.">?</span>
               grid2 === "DRSA" ? "#d9c3a3" : grid2 === "DRSB" ? "#c9d4cd" :
               grid2 === "DRSC" ? "#b9c7d7" : grid2 === "DRSD" ? "#d6c5b7" :
               grid2 === "DRSE" ? "#c8beb2" : grid2 === "DRSF" ? "#b8c1b1" : "#c3b8cf");
-            const priceDiff  = total.unitPrice  - total2.unitPrice;
-            const costDiff   = total.unitCost   - total2.unitCost;
-            const marginDiff = (total.grossMargin ?? 0) - (total2.grossMargin ?? 0);
+            const priceDiff  = total2.unitPrice  - total.unitPrice;
+            const costDiff   = total2.unitCost   - total.unitCost;
+            const marginDiff = (total2.grossMargin ?? 0) - (total.grossMargin ?? 0);
             compareValuesEl.style.display = "";
             document.getElementById("cmpPriceDiff").textContent  = sign(priceDiff)  + money(priceDiff);
             document.getElementById("cmpCostDiff").textContent   = sign(costDiff)   + money(costDiff);
@@ -2144,7 +2646,19 @@ This replaces manually picking a single size.">?</span>
       render();
     });
 
-    document.getElementById("printBtn").addEventListener("click", () => window.print());
+    document.getElementById("printBtn").addEventListener("click", () => {
+      const now = new Date();
+      const dateStr = now.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+      const timeStr = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+      document.getElementById("printDateLine").textContent = `Gerado em ${dateStr} às ${timeStr}`;
+
+      /* Blank the page title so browser doesn't print it in the header */
+      const savedTitle = document.title;
+      document.title = "";
+      window.print();
+      /* Restore title after dialog closes */
+      window.addEventListener("afterprint", () => { document.title = savedTitle; }, { once: true });
+    });
 
     /* ADDED ── Data Import event listeners (Section I wiring) ── */
 
@@ -2183,7 +2697,45 @@ This replaces manually picking a single size.">?</span>
       document.getElementById("importStatus").className  = "import-status";
     });
 
+    /* ── Window simulation inputs are caught by the global querySelectorAll listener above,
+          which calls render(). render() reads winSimW/winSimH via getSimDim() and
+          recomputes shade proportions. No extra listeners needed here. ── */
+
+    /* ── Cost Factor: clamp on blur + real-time visual feedback ── */
+    fields.costFactor.addEventListener("blur", () => {
+      const v = parseFloat(fields.costFactor.value);
+      if (!isNaN(v)) {
+        const clamped = Math.min(1, Math.max(0.1, v));
+        fields.costFactor.value      = clamped.toFixed(2);
+        fields.costFactorRange.value = clamped;
+        fields.costFactor.style.borderColor = "";
+        render();
+      }
+    });
+
+    fields.costFactor.addEventListener("input", () => {
+      const v = parseFloat(fields.costFactor.value);
+      fields.costFactor.style.borderColor =
+        (!isNaN(v) && (v < 0.1 || v > 1)) ? "var(--warn)" : "";
+    });
+
     render();
+
+    /* ── Sidebar toggle ── */
+    document.getElementById("sidebarToggle").addEventListener("click", () => {
+      const collapsed = document.querySelector(".app").classList.toggle("sidebar-collapsed");
+      document.getElementById("sidebarToggleIcon").textContent = collapsed ? "›" : "‹";
+    });
+
+    /* ── Tab switching for lower panels ── */
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(btn.dataset.target).classList.add("active");
+      });
+    });
   </script>
 </body>
 </html>
